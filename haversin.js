@@ -225,8 +225,8 @@ function consumeOneCharacter(buffer, bufferIndex, character) {
 	return bufferIndex;
 }
 
+const numberStringBuffer = new Array(19).fill(32); 
 function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters) {
-	const numberStringBuffer = new Array(19).fill(32); 
 	let charIndex = 0;
 	while (numberCharacters[characterView[characterIndex]]) {
 		numberStringBuffer[charIndex++] = characterView[characterIndex++];
