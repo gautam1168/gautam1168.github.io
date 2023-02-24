@@ -1,0 +1,23 @@
+* {
+	font-family: sans-serif;	 
+}
+
+#generation {
+	display: flex;
+	flex-direction: column;
+}
+
+#generation #progress {
+	height: 20px;
+	border: solid 1px #ccc;
+	display: none;
+}
+
+#generation #progress #level {
+	height: 100%;
+	background: blue;
+	width: 50%;
+	display: flex;
+	justify-content: center;
+	color: white;
+}

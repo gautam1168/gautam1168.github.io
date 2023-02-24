@@ -2,13 +2,20 @@
   <head>
     <title>Haversin</title>
 		<script src="haversin.js" async defer></script>
+		<link rel="stylesheet" href="main.css">
   </head>
   <body>
-		<button id="write">Create File</button>
+		<div id="generation">
+			<input type="number" value=10>
+			<div id="progress">
+				<div id="level"></div>
+			</div>
+			<button id="write">Create File</button>
+		</div>
 		<button id="read">Read File</button>
 		<div>
-			<pre id="javascript-out" style="border: solid 2px red; padding: 5px;">
-			</pre>
+			<div id="javascript-out" style="border: solid 2px red; padding: 5px;">
+			</div>
 		</div>
 	</body>
 </html>

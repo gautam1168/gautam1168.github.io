@@ -17,11 +17,43 @@ function haversine(lat1, lon1, lat2, lon2) {
 	return R * c;
 }
 
+function generateCoordinatePair() {
+	const coords = [0, 0, 0, 0];
+	for (let i = 0; i < 4; ++i) {
+		coords[i] = Math.random()*200 - 100;
+	}
+	return `{"x1": ${coords[0]}, "y1": ${coords[1]}, "x2": ${coords[2]}, "y2": ${coords[3]} }`;
+}
+
 async function createAFile() {
+	const datapoints = document.querySelector("#generation input");
+	const progress = document.querySelector("#generation #progress");
+	const progresslevel = document.querySelector("#generation #progress #level");
+	const numPoints = datapoints.value;
+	
+	let showingProgress = false;
+	let fullWidth = 0;
+	if (numPoints > 1000) {
+		showingProgress = true;
+		progress.style.display = "flex";
+		fullWidth = progress.getBoundingClientRect().width;
+	}
+
 	const newFileHandle = await window.showSaveFilePicker();
 	const writableStream = await newFileHandle.createWritable();
-	await writableStream.write('{ "a": 1 }');
+	await writableStream.write('{ "coordinates": [');
+	for (let i = 0; i < numPoints - 1; ++i) {
+		const pair = generateCoordinatePair() + ","
+		await writableStream.write(pair);
+		if (showingProgress && ((i % 1000) == 0)) {
+			progresslevel.style.width = (fullWidth * (i / numPoints)) + 'px';
+		}
+	}
+	await writableStream.write(generateCoordinatePair());
+	await writableStream.write('] }');
 	await writableStream.close();
+	progress.style.display = "none";
+	// alert("File creation complete! You can click on Read file to view the result");
 }
 
 async function readAFile() {
@@ -38,7 +70,7 @@ async function readAFile() {
 }
 
 window.onload = function() {
-	let button = document.querySelector("button#write");
+	let button = document.querySelector("#generation button#write");
 	button.addEventListener("click", createAFile);
 
 	button = document.querySelector("button#read");
