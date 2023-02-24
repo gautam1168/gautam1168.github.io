@@ -22,19 +22,19 @@ function generateCoordinatePair() {
 	for (let i = 0; i < 4; ++i) {
 		coords[i] = Math.random()*200 - 100;
 	}
-	return `{"x1": ${coords[0]}, "y1": ${coords[1]}, "x2": ${coords[2]}, "y2": ${coords[3]} }`;
+	return `{"x0": ${coords[0]}, "y0": ${coords[1]}, "x1": ${coords[2]}, "y2": ${coords[3]} }`;
 }
 
 function generateMultipleCoordinatePairs(numPairs) {
 	const coords = new Array(numPairs * 4).fill(0);
 	for (let i = 0; i < coords.length; ++i) {
-		coords[i] = Math.random()*200 - 100;
+		coords[i] = Math.random()*100;
 	}
 
 	let jsonFrag = new Array(numPairs);
 	let randIndex = 0;
 	for (let i = 0; i < numPairs; ++i) {
-		jsonFrag[i] = `{"x1": ${coords[randIndex++]}, "y1": ${coords[randIndex++]}, "x2": ${coords[randIndex++]}, "y2": ${coords[randIndex++]} }`;
+		jsonFrag[i] = `{"x0": ${coords[randIndex++]}, "y0": ${coords[randIndex++]}, "x1": ${coords[randIndex++]}, "y1": ${coords[randIndex++]} }`;
 	}
 	return jsonFrag.join(',');
 }
@@ -104,7 +104,7 @@ function generateMultipleCoordinatePairs2(numPairs) {
 }
 
 function makeTemplate(numPairs) {
-	const template = `{"x1": ___________________, "y1": ___________________, "x2": ___________________, "y2": ___________________ }`;
+	const template = `{"x0": ___________________, "y0": ___________________, "x1": ___________________, "y1": ___________________ }`;
 	const buf = new Uint8Array(template.length);
 	for (let i = 0; i < template.length; i++) {
 		buf[i] = template.charCodeAt(i);
@@ -153,7 +153,7 @@ async function createAFile() {
 
 	const newFileHandle = await window.showSaveFilePicker();
 	const writableStream = await newFileHandle.createWritable();
-	await writableStream.write('{ "coordinates": [');
+	await writableStream.write('{ "pairs": [');
 
 	const start_time = performance.now();
 
@@ -177,8 +177,8 @@ async function createAFile() {
 
 	resultdiv.innerText = `
 		Total time: ${end_time - start_time} ms
-		Time for writing to stream: ${mid_time - start_time} ms
-		Time for closing stream: ${end_time - mid_time} ms
+		Time for generating and writing to stream: ${mid_time - start_time} ms
+		Time for closing stream and writing to disk: ${end_time - mid_time} ms
 	`;
 	// alert("File creation complete! You can click on Read file to view the result");
 }
@@ -189,11 +189,133 @@ async function readAFile() {
 	const buffer = await file.arrayBuffer();
 	const characterView = new Uint8Array(buffer);
 	let contents = '';
-	for (let i = 0; i < characterView.length; i++) {
+	for (let i = 0; i < 32768; i++) {
 		contents += String.fromCharCode(characterView[i]);
 	}
+
+	if (characterView.length > 32768) {
+		contents += ` ...truncated ${characterView.length - 32768} characters`;
+	}
+
 	const domnode = document.querySelector("#javascript-out");
 	domnode.innerText = contents;
+}
+
+function consumeCharacters(buffer, bufferIndex, charactersToConsume) {
+	let numCharactersConsumed = 0;
+	while (numCharactersConsumed < charactersToConsume.length && bufferIndex < buffer.length) {
+		const character = buffer[bufferIndex++];
+		if (character === charactersToConsume[numCharactersConsumed]) {
+			numCharactersConsumed++;
+		}
+	}
+	return bufferIndex;
+}
+
+function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters) {
+	let numberString = '';
+	while (numberCharacters.has(characterView[characterIndex])) {
+		numberString += String.fromCharCode(characterView[characterIndex++]);
+	}
+	floatBuffer[bufferIndex] = parseFloat(numberString);
+	return characterIndex;
+}
+
+async function readAFileAndParseIt() {
+	let haverSineSum = 0;
+	let numPairs = 0;
+
+	const [newFileHandle] = await window.showOpenFilePicker();
+	const file = await newFileHandle.getFile();
+	const buffer = await file.arrayBuffer();
+	const characterView = new Uint8Array(buffer);
+
+	const pairs = [112, 97, 105, 114, 115];
+	const colon = 58;
+	const quote = 34;
+	const openBracket = 91;
+	const closeBracket = 93;
+	const openBrace = 123;
+	const closeBrace = 125;
+	const comma = 44;
+	const decimal = 46;
+	const minus = 45;
+	const zero = 48;
+	const x = 120;
+	const y = 121;
+	const space = 32;
+
+	const numberCharacters = new Set([
+		decimal,
+		minus,
+		space,
+		zero,
+		zero + 1,
+		zero + 2,
+		zero + 3,
+		zero + 4,
+		zero + 5,
+		zero + 6,
+		zero + 7,
+		zero + 8,
+		zero + 9
+	]);
+
+	const floatBuffer = new Float64Array(5);
+	floatBuffer.fill(0);	
+
+	let characterIndex = 0;
+	
+	characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
+	characterIndex = consumeCharacters(characterView, characterIndex, [quote]);
+	characterIndex = consumeCharacters(characterView, characterIndex, pairs);
+	characterIndex = consumeCharacters(characterView, characterIndex, [quote]);
+	characterIndex = consumeCharacters(characterView, characterIndex, [colon, openBracket]);
+
+	while (characterIndex < characterView.length) {
+		characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
+
+		// x0
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	x, zero, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 0, numberCharacters);
+		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		// y0
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	y, zero, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 1, numberCharacters);
+		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		// x1
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	x, zero + 1, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 2, numberCharacters);
+		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		// y1
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	y, zero + 1, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 3, numberCharacters);
+		// characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		characterIndex = consumeCharacters(characterView, characterIndex, [closeBrace, comma]);
+
+		const currentHaverSine = haversine(floatBuffer[0], floatBuffer[1], floatBuffer[2], floatBuffer[3]);
+		floatBuffer[4] += currentHaverSine;
+		numPairs++;
+	}
+
+	const domnode = document.querySelector("#javascript-out");
+	domnode.innerText = `Average distance: ${floatBuffer[4] / numPairs}`;
 }
 
 window.onload = function() {
@@ -201,7 +323,7 @@ window.onload = function() {
 	button.addEventListener("click", createAFile);
 
 	button = document.querySelector("button#read");
-	button.addEventListener("click", readAFile);
+	button.addEventListener("click", readAFileAndParseIt);
 }
 
 /*
