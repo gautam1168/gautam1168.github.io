@@ -222,6 +222,56 @@ function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, 
 	return characterIndex;
 }
 
+async function calculate(characterView, startIndex, floatBuffer, numPairs, numberCharacters, 
+	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}) {
+	let characterIndex = startIndex;
+	let numPairsProcessed = 0;
+	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2 * 2 * 2 * 2 * 2) {
+		characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
+
+		// x0
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	x, zero, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 0, numberCharacters);
+		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		// y0
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	y, zero, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 1, numberCharacters);
+		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		// x1
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	x, zero + 1, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 2, numberCharacters);
+		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		// y1
+		characterIndex = consumeCharacters(characterView, characterIndex, 
+			[quote,	y, zero + 1, quote, colon]
+		);
+
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 3, numberCharacters);
+		// characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+
+		characterIndex = consumeCharacters(characterView, characterIndex, [closeBrace, comma]);
+
+		floatBuffer[4] += haversine(floatBuffer[0], floatBuffer[1], floatBuffer[2], floatBuffer[3]);
+		numPairsProcessed++;
+	}
+	return {
+		numPairs: numPairs + numPairsProcessed,
+		characterIndex
+	}
+}
+
 async function readAFileAndParseIt() {
 
 
@@ -284,45 +334,14 @@ async function readAFileAndParseIt() {
 	const start_calculation = performance.now();
 
 	while (characterIndex < characterView.length) {
-		characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
-
-		// x0
-		characterIndex = consumeCharacters(characterView, characterIndex, 
-			[quote,	x, zero, quote, colon]
-		);
-
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 0, numberCharacters);
-		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
-
-		// y0
-		characterIndex = consumeCharacters(characterView, characterIndex, 
-			[quote,	y, zero, quote, colon]
-		);
-
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 1, numberCharacters);
-		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
-
-		// x1
-		characterIndex = consumeCharacters(characterView, characterIndex, 
-			[quote,	x, zero + 1, quote, colon]
-		);
-
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 2, numberCharacters);
-		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
-
-		// y1
-		characterIndex = consumeCharacters(characterView, characterIndex, 
-			[quote,	y, zero + 1, quote, colon]
-		);
-
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 3, numberCharacters);
-		// characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
-
-		characterIndex = consumeCharacters(characterView, characterIndex, [closeBrace, comma]);
-
-		const currentHaverSine = haversine(floatBuffer[0], floatBuffer[1], floatBuffer[2], floatBuffer[3]);
-		floatBuffer[4] += currentHaverSine;
-		numPairs++;
+		const result = await calculate(
+			characterView, characterIndex, floatBuffer, numPairs, numberCharacters,
+			{
+				openBrace, comma, quote, x, y, zero, colon, closeBrace
+			});
+		characterIndex = result.characterIndex;
+		numPairs = result.numPairs;
+		// console.log("Progress: ", 100 * characterIndex/characterView.length);
 	}
 
 	const end_calculation = performance.now();
