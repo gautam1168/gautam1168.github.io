@@ -219,12 +219,19 @@ function consumeCharacters(buffer, bufferIndex, charactersToConsume) {
 	return bufferIndex;
 }
 
+function consumeOneCharacter(buffer, bufferIndex, character) {
+	do {
+	} while (buffer[bufferIndex++] != character);
+	return bufferIndex;
+}
+
 function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters) {
-	let numberString = '';
-	while (numberCharacters.has(characterView[characterIndex])) {
-		numberString += String.fromCharCode(characterView[characterIndex++]);
+	const numberStringBuffer = new Array(19).fill(32); 
+	let charIndex = 0;
+	while (numberCharacters[characterView[characterIndex]]) {
+		numberStringBuffer[charIndex++] = characterView[characterIndex++];
 	}
-	floatBuffer[bufferIndex] = parseFloat(numberString);
+	floatBuffer[bufferIndex] = parseFloat(String.fromCharCode.apply(undefined, numberStringBuffer));
 	return characterIndex;
 }
 
@@ -233,7 +240,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
 	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2) {
-		characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
+		characterIndex = consumeOneCharacter(characterView, characterIndex, openBrace);
 
 		// x0
 		characterIndex = consumeCharacters(characterView, characterIndex, 
@@ -241,7 +248,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 		);
 
 		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 0, numberCharacters);
-		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// y0
 		characterIndex = consumeCharacters(characterView, characterIndex, 
@@ -249,7 +256,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 		);
 
 		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 1, numberCharacters);
-		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// x1
 		characterIndex = consumeCharacters(characterView, characterIndex, 
@@ -257,7 +264,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 		);
 
 		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 2, numberCharacters);
-		characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// y1
 		characterIndex = consumeCharacters(characterView, characterIndex, 
@@ -319,21 +326,20 @@ async function readAFileAndParseIt() {
 	const y = 121;
 	const space = 32;
 
-	const numberCharacters = new Set([
-		decimal,
-		minus,
-		space,
-		zero,
-		zero + 1,
-		zero + 2,
-		zero + 3,
-		zero + 4,
-		zero + 5,
-		zero + 6,
-		zero + 7,
-		zero + 8,
-		zero + 9
-	]);
+	const numberCharacters = new Array(58).fill(0);
+	numberCharacters[decimal] = 1;
+	numberCharacters[minus] = 1;
+	numberCharacters[space] = 1;
+	numberCharacters[zero] = 1;
+	numberCharacters[zero + 1] = 1;
+	numberCharacters[zero + 2] = 1;
+	numberCharacters[zero + 3] = 1;
+	numberCharacters[zero + 4] = 1;
+	numberCharacters[zero + 5] = 1;
+	numberCharacters[zero + 6] = 1;
+	numberCharacters[zero + 7] = 1;
+	numberCharacters[zero + 8] = 1;
+	numberCharacters[zero + 9] = 1;
 
 	const floatBuffer = new Float64Array(5);
 	floatBuffer.fill(0);	
@@ -370,6 +376,7 @@ async function readAFileAndParseIt() {
 		Total pairs evaluated: ${numPairs}
 		Time for reading: ${finish_reading - start_reading} ms
 		Time for calculation: ${end_calculation - start_calculation} ms
+		Haversines per ms: ${numPairs/(end_calculation - start_calculation)}
 	`;
 }
 
