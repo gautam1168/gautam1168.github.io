@@ -11,16 +11,16 @@ function haversine(lat1, lon1, lat2, lon2) {
 	lat1 = radians(lat1);
 	lat2 = radians(lat2);
 
-	const a = Math.sin(dLat/2)**2 + Math.cos(lat2)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-	const c = 2 * Math.asin(Math.sqrt(a));
+	const a = Math.sin(dLat/2)**2 + Math.cos(lat2)*Math.cos(lat1)*(Math.sin(dLon/2)**2);
+	const c = 2 * R * Math.asin(Math.sqrt(a));
 
-	return R * c;
+	return c;
 }
 
 function generateCoordinatePair() {
 	const coords = [0, 0, 0, 0];
 	for (let i = 0; i < 4; ++i) {
-		coords[i] = Math.random()*200 - 100;
+		coords[i] = Math.random()*90;
 	}
 	return `{"x0": ${coords[0]}, "y0": ${coords[1]}, "x1": ${coords[2]}, "y2": ${coords[3]} }`;
 }
@@ -269,7 +269,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 
 		characterIndex = consumeCharacters(characterView, characterIndex, [closeBrace, comma]);
 
-		floatBuffer[4] += haversine(floatBuffer[0], floatBuffer[1], floatBuffer[2], floatBuffer[3]);
+		floatBuffer[4] += haversine(floatBuffer[0], floatBuffer[2], floatBuffer[1], floatBuffer[3]);
 		numPairsProcessed++;
 	}
 
@@ -366,6 +366,7 @@ async function readAFileAndParseIt() {
 
 	const domnode = document.querySelector("#javascript-out");
 	domnode.innerText = `
+		Average: ${floatBuffer[4]/numPairs}
 		Total pairs evaluated: ${numPairs}
 		Time for reading: ${finish_reading - start_reading} ms
 		Time for calculation: ${end_calculation - start_calculation} ms
