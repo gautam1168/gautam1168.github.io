@@ -226,9 +226,15 @@ async function readAFileAndParseIt() {
 	let numPairs = 0;
 
 	const [newFileHandle] = await window.showOpenFilePicker();
+
+	const start_reading = performance.now();
+
 	const file = await newFileHandle.getFile();
 	const buffer = await file.arrayBuffer();
 	const characterView = new Uint8Array(buffer);
+
+
+	const finish_reading = performance.now();
 
 	const pairs = [112, 97, 105, 114, 115];
 	const colon = 58;
@@ -272,6 +278,8 @@ async function readAFileAndParseIt() {
 	characterIndex = consumeCharacters(characterView, characterIndex, [quote]);
 	characterIndex = consumeCharacters(characterView, characterIndex, [colon, openBracket]);
 
+	const start_calculation = performance.now();
+
 	while (characterIndex < characterView.length) {
 		characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
 
@@ -314,8 +322,14 @@ async function readAFileAndParseIt() {
 		numPairs++;
 	}
 
+	const end_calculation = performance.now();
+
 	const domnode = document.querySelector("#javascript-out");
-	domnode.innerText = `Average distance: ${floatBuffer[4] / numPairs}`;
+	domnode.innerText = `
+		Total pairs evaluated: ${numPairs}
+		Time for reading: ${finish_reading - start_reading} ms
+		Time for calculation: ${end_calculation - start_calculation} ms
+	`;
 }
 
 window.onload = function() {
