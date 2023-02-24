@@ -2,18 +2,19 @@
 	font-family: sans-serif;	 
 }
 
+#calculation,
 #generation {
 	display: flex;
 	flex-direction: column;
 }
 
-#generation #progress {
+#progress {
 	height: 20px;
 	border: solid 1px #ccc;
 	display: none;
 }
 
-#generation #progress #level {
+#progress #level {
 	height: 100%;
 	background: blue;
 	width: 50%;

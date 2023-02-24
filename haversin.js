@@ -173,6 +173,7 @@ async function createAFile() {
 	await writableStream.close();
 
 	const end_time = performance.now();
+	progresslevel.style.background = 'blue';
 	progress.style.display = "none";
 
 	resultdiv.innerText = `
@@ -222,6 +223,8 @@ function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, 
 }
 
 async function readAFileAndParseIt() {
+
+
 	let haverSineSum = 0;
 	let numPairs = 0;
 
