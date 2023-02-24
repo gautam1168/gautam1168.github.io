@@ -17,6 +17,35 @@ function haversine(lat1, lon1, lat2, lon2) {
 	return R * c;
 }
 
+async function createAFile() {
+	const newFileHandle = await window.showSaveFilePicker();
+	const writableStream = await newFileHandle.createWritable();
+	await writableStream.write('{ "a": 1 }');
+	await writableStream.close();
+}
+
+async function readAFile() {
+	const [newFileHandle] = await window.showOpenFilePicker();
+	const file = await newFileHandle.getFile();
+	const buffer = await file.arrayBuffer();
+	const characterView = new Uint8Array(buffer);
+	let contents = '';
+	for (let i = 0; i < characterView.length; i++) {
+		contents += String.fromCharCode(characterView[i]);
+	}
+	const domnode = document.querySelector("#javascript-out");
+	domnode.innerText = contents;
+}
+
+window.onload = function() {
+	let button = document.querySelector("button#write");
+	button.addEventListener("click", createAFile);
+
+	button = document.querySelector("button#read");
+	button.addEventListener("click", readAFile);
+}
+
+/*
 const start_time = performance.now();
 let pointsLeft = 1000 * 1000 * 10;
 while (pointsLeft--) {
@@ -26,3 +55,4 @@ const end_time = performance.now();
 const elapsed_time = (end_time - start_time);
 const measure = document.querySelector("#javascript-out");
 measure.innerText = `Time elapsed for js: ${elapsed_time}ms`;
+*/
