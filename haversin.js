@@ -226,7 +226,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}) {
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
-	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2 * 2 * 2 * 2 * 2) {
+	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2) {
 		characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
 
 		// x0
@@ -266,14 +266,23 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 		floatBuffer[4] += haversine(floatBuffer[0], floatBuffer[1], floatBuffer[2], floatBuffer[3]);
 		numPairsProcessed++;
 	}
-	return {
-		numPairs: numPairs + numPairsProcessed,
-		characterIndex
-	}
+
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			resolve({
+				numPairs: numPairs + numPairsProcessed,
+				characterIndex
+			});
+		})
+	});
 }
 
 async function readAFileAndParseIt() {
-
+	const progress = document.querySelector("#calculation #progress");
+	const progresslevel = document.querySelector("#calculation #progress #level");
+	progress.style.display = "flex";
+	progresslevel.style.width = "0px";
+	const fullWidth = progress.getBoundingClientRect().width;
 
 	let haverSineSum = 0;
 	let numPairs = 0;
@@ -341,10 +350,13 @@ async function readAFileAndParseIt() {
 			});
 		characterIndex = result.characterIndex;
 		numPairs = result.numPairs;
-		// console.log("Progress: ", 100 * characterIndex/characterView.length);
+
+		const completion = fullWidth * characterIndex/characterView.length;
+		progresslevel.style.width = `${completion}px`;
 	}
 
 	const end_calculation = performance.now();
+	progress.style.display = "none";
 
 	const domnode = document.querySelector("#javascript-out");
 	domnode.innerText = `
