@@ -25,6 +25,20 @@ function generateCoordinatePair() {
 	return `{"x1": ${coords[0]}, "y1": ${coords[1]}, "x2": ${coords[2]}, "y2": ${coords[3]} }`;
 }
 
+function generateMultipleCoordinatePairs(numPairs) {
+	const coords = new Array(numPairs * 4).fill(0);
+	for (let i = 0; i < coords.length; ++i) {
+		coords[i] = Math.random()*200 - 100;
+	}
+
+	let jsonFrag = new Array(numPairs);
+	let randIndex = 0;
+	for (let i = 0; i < numPairs; ++i) {
+		jsonFrag[i] = `{"x1": ${coords[randIndex++]}, "y1": ${coords[randIndex++]}, "x2": ${coords[randIndex++]}, "y2": ${coords[randIndex++]} }`;
+	}
+	return jsonFrag.join(',');
+}
+
 async function createAFile() {
 	const datapoints = document.querySelector("#generation input");
 	const progress = document.querySelector("#generation #progress");
@@ -35,7 +49,7 @@ async function createAFile() {
 	
 	let showingProgress = false;
 	let fullWidth = 0;
-	if (numPoints > 1000) {
+	if (numPoints > 1024) {
 		showingProgress = true;
 		progress.style.display = "flex";
 		progresslevel.style.width = '0px';
@@ -48,17 +62,18 @@ async function createAFile() {
 
 	const start_time = performance.now();
 
-	for (let i = 0; i < numPoints - 1; ++i) {
-		const pair = generateCoordinatePair() + ","
+	const pairChunkSize = 512;
+	for (let i = 0; i < (numPoints/pairChunkSize) - 1; ++i) {
+		const pair = generateMultipleCoordinatePairs(pairChunkSize) + ","
 		await writableStream.write(pair);
-		if (showingProgress && ((i % 1000) == 0)) {
-			progresslevel.style.width = (fullWidth * (i / numPoints)) + 'px';
+		if (showingProgress && ((i % 1024) == 0)) {
+			progresslevel.style.width = (fullWidth * ((i*pairChunkSize) / numPoints)) + 'px';
 		}
 	}
 
 	const end_time = performance.now();
 
-	await writableStream.write(generateCoordinatePair());
+	await writableStream.write(generateMultipleCoordinatePairs(4));
 	await writableStream.write('] }');
 	await writableStream.close();
 	progress.style.display = "none";
