@@ -29,6 +29,8 @@ async function createAFile() {
 	const datapoints = document.querySelector("#generation input");
 	const progress = document.querySelector("#generation #progress");
 	const progresslevel = document.querySelector("#generation #progress #level");
+	const resultdiv = document.querySelector("#javascript-out");
+
 	const numPoints = datapoints.value;
 	
 	let showingProgress = false;
@@ -36,12 +38,16 @@ async function createAFile() {
 	if (numPoints > 1000) {
 		showingProgress = true;
 		progress.style.display = "flex";
+		progresslevel.style.width = '0px';
 		fullWidth = progress.getBoundingClientRect().width;
 	}
 
 	const newFileHandle = await window.showSaveFilePicker();
 	const writableStream = await newFileHandle.createWritable();
 	await writableStream.write('{ "coordinates": [');
+
+	const start_time = performance.now();
+
 	for (let i = 0; i < numPoints - 1; ++i) {
 		const pair = generateCoordinatePair() + ","
 		await writableStream.write(pair);
@@ -49,10 +55,15 @@ async function createAFile() {
 			progresslevel.style.width = (fullWidth * (i / numPoints)) + 'px';
 		}
 	}
+
+	const end_time = performance.now();
+
 	await writableStream.write(generateCoordinatePair());
 	await writableStream.write('] }');
 	await writableStream.close();
 	progress.style.display = "none";
+
+	resultdiv.innerText = (end_time - start_time) + ' ms, ' + ((end_time - start_time)/1000) + ' s';
 	// alert("File creation complete! You can click on Read file to view the result");
 }
 
