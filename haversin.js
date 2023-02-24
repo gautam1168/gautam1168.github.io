@@ -134,6 +134,12 @@ function printBuffer(buf) {
 	console.log(text);
 }
 
+function setAndCreate(number) {
+	const datapoints = document.querySelector("#generation input");
+	datapoints.value = number;
+	createAFile();
+}
+
 async function createAFile() {
 	const datapoints = document.querySelector("#generation input");
 	const progress = document.querySelector("#generation #progress");
@@ -367,8 +373,22 @@ async function readAFileAndParseIt() {
 }
 
 window.onload = function() {
-	let button = document.querySelector("#generation button#write");
-	button.addEventListener("click", createAFile);
+	let button;
+
+	button = document.querySelector("#generation button#write-10-k");
+	button.addEventListener("click", () => setAndCreate(16384));
+
+	button = document.querySelector("#generation button#write-100-k");
+	button.addEventListener("click", () => setAndCreate(131072));
+
+	button = document.querySelector("#generation button#write-mil");
+	button.addEventListener("click", () => setAndCreate(1048576));
+
+	button = document.querySelector("#generation button#write-8-mil");
+	button.addEventListener("click", () => setAndCreate(8388608));
+
+	button = document.querySelector("#generation button#write-16-mil");
+	button.addEventListener("click", () => setAndCreate(16777216));
 
 	button = document.querySelector("button#read");
 	button.addEventListener("click", readAFileAndParseIt);

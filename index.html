@@ -5,18 +5,27 @@
 		<link rel="stylesheet" href="main.css">
   </head>
   <body>
-		<div id="generation">
-			<input type="number" value=16777216>
-			<div id="progress">
-				<div id="level"></div>
+		<h3>This page uses experimental API's. Use Chrome!!</h3>
+		<div id="controls">
+			<div id="generation">
+				<input type="number" value=16384>
+				<div id="progress">
+					<div id="level"></div>
+				</div>
+				<div id="writebuttons">
+					<button id="write-10-k">10 Thousand</button>
+					<button id="write-100-k">100 Thousand</button>
+					<button id="write-mil">Million</button>
+					<button id="write-8-mil">8 Mil</button>
+					<button id="write-16-mil">16 Mil</button>
+				</div>
 			</div>
-			<button id="write">Create File</button>
-		</div>
-		<div id="calculation">
-			<div id="progress">
-				<div id="level"></div>
+			<div id="calculation">
+				<div id="progress">
+					<div id="level"></div>
+				</div>
+				<button id="read">Calculate</button>
 			</div>
-			<button id="read">Calculate</button>
 		</div>
 		<div>
 			<div id="javascript-out" style="border: solid 2px red; padding: 5px;">

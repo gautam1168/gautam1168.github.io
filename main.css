@@ -2,16 +2,27 @@
 	font-family: sans-serif;	 
 }
 
+#controls {
+	display: flex;
+}
+
 #calculation,
 #generation {
 	display: flex;
 	flex-direction: column;
+	width: 50%;
+	align-items: flex-start;
+	border: solid 3px green;
+	border-radius: 4px;
+	margin: 5px;
+	padding: 5px;
 }
 
 #progress {
-	height: 20px;
+	height: 4px;
 	border: solid 1px #ccc;
 	display: none;
+	width: 100%;
 }
 
 #progress #level {
