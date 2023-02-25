@@ -1,19 +1,3 @@
-const pairs = [112, 97, 105, 114, 115];
-const colon = 58;
-const quote = 34;
-const openBracket = 91;
-const closeBracket = 93;
-const openBrace = 123;
-const closeBrace = 125;
-const comma = 44;
-const decimal = 46;
-const minus = 45;
-const zero = 48;
-const x = 120;
-const y = 121;
-const a = 97;
-const space = 32;
-
 /*
 const workerCommsSab = new SharedArrayBuffer(2 * 32);
 const workerComms = new Int32Array(workerCommsSab);

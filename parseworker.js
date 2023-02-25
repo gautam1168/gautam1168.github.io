@@ -66,13 +66,13 @@ function consumeNumber(characterView, characterIndex, outputBuffer, bufferIndex,
 	return characterIndex;
 }
 
-async function extractPoints(characterView, startIndex, numPairs, numberCharacters, 
+async function extractPoints(characterView, startIndex, endIndex, numPairs, numberCharacters, 
 	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}, 
 	numberStringBuffer, outputBuffer, totalPairsInFile) {
 	let prevUpdateTime = performance.now();
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
-	while (characterIndex < characterView.length) {
+	while (characterIndex <= endIndex) {
 		characterIndex = consumeOneCharacter(characterView, characterIndex, openBrace);
 
 		// x0
@@ -119,7 +119,7 @@ async function extractPoints(characterView, startIndex, numPairs, numberCharacte
 			prevUpdateTime = now;
 			postMessage({
 				type: "progress-update",
-				level: 100 * (characterIndex/characterView.length)
+				level: 100 * ((characterIndex - startIndex)/(endIndex - startIndex))
 			});
 		} 
 	}
@@ -165,7 +165,7 @@ onmessage = async function(e) {
 
 	let numPairs = 0;
 	await extractPoints(
-		characterView, characterIndex, numPairs, 
+		characterView, characterIndex, characterView.length - 1, numPairs, 
 		numberCharacters, skipCharacters, numberStringBuffer,
 		parsedCoordinates, totalPairsInFile
 	);
