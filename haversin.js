@@ -1,3 +1,19 @@
+const pairs = [112, 97, 105, 114, 115];
+const colon = 58;
+const quote = 34;
+const openBracket = 91;
+const closeBracket = 93;
+const openBrace = 123;
+const closeBrace = 125;
+const comma = 44;
+const decimal = 46;
+const minus = 45;
+const zero = 48;
+const x = 120;
+const y = 121;
+const space = 32;
+const numberStringBuffer = new Array(19).fill(space); 
+
 function radians(degrees) {
 	return degrees * 0.0174533;
 }
@@ -225,12 +241,18 @@ function consumeOneCharacter(buffer, bufferIndex, character) {
 	return bufferIndex;
 }
 
-const numberStringBuffer = new Array(19).fill(32); 
 function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters) {
 	let charIndex = 0;
+	let numberLength = 19;
+	while (numberLength--,numberLength--) {
+		numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
+		numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
+	}
+	/*
 	while (numberCharacters[characterView[characterIndex]]) {
 		numberStringBuffer[charIndex++] = characterView[characterIndex++];
 	}
+	*/
 	floatBuffer[bufferIndex] = parseFloat(String.fromCharCode.apply(undefined, numberStringBuffer));
 	return characterIndex;
 }
@@ -311,20 +333,7 @@ async function readAFileAndParseIt() {
 
 	const finish_reading = performance.now();
 
-	const pairs = [112, 97, 105, 114, 115];
-	const colon = 58;
-	const quote = 34;
-	const openBracket = 91;
-	const closeBracket = 93;
-	const openBrace = 123;
-	const closeBrace = 125;
-	const comma = 44;
-	const decimal = 46;
-	const minus = 45;
-	const zero = 48;
-	const x = 120;
-	const y = 121;
-	const space = 32;
+	
 
 	const numberCharacters = new Array(58).fill(0);
 	numberCharacters[decimal] = 1;
@@ -341,6 +350,10 @@ async function readAFileAndParseIt() {
 	numberCharacters[zero + 8] = 1;
 	numberCharacters[zero + 9] = 1;
 
+	const skipCharacters = {
+		openBrace, comma, quote, x, y, zero, colon, closeBrace
+	};
+
 	const floatBuffer = new Float64Array(5);
 	floatBuffer.fill(0);	
 
@@ -356,10 +369,10 @@ async function readAFileAndParseIt() {
 
 	while (characterIndex < characterView.length) {
 		const result = await calculate(
-			characterView, characterIndex, floatBuffer, numPairs, numberCharacters,
-			{
-				openBrace, comma, quote, x, y, zero, colon, closeBrace
-			});
+			characterView, characterIndex, floatBuffer, numPairs, 
+			numberCharacters, skipCharacters
+		);
+
 		characterIndex = result.characterIndex;
 		numPairs = result.numPairs;
 
