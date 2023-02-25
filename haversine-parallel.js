@@ -12,7 +12,6 @@ const zero = 48;
 const x = 120;
 const y = 121;
 const space = 32;
-const numberStringBuffer = new Array(19).fill(space); 
 
 function radians(degrees) {
 	return degrees * 0.0174533;
@@ -33,14 +32,6 @@ function haversine(lat1, lon1, lat2, lon2) {
 	return c;
 }
 
-function generateCoordinatePair() {
-	const coords = [0, 0, 0, 0];
-	for (let i = 0; i < 4; ++i) {
-		coords[i] = Math.random()*90;
-	}
-	return `{"x0": ${coords[0]}, "y0": ${coords[1]}, "x1": ${coords[2]}, "y2": ${coords[3]} }`;
-}
-
 function generateMultipleCoordinatePairs(numPairs) {
 	const coords = new Array(numPairs * 4).fill(0);
 	for (let i = 0; i < coords.length; ++i) {
@@ -55,93 +46,6 @@ function generateMultipleCoordinatePairs(numPairs) {
 	return jsonFrag.join(',');
 }
 
-const templates = {};
-
-// This is slower. Maybe profiling this function will tell us why 
-function generateMultipleCoordinatePairs2(numPairs) {
-	if (!templates[numPairs]) {
-		templates[numPairs] = makeTemplate(numPairs);
-	}
-
-	const coords = new Array(numPairs * 4).fill(0);
-	for (let i = 0; i < coords.length; ++i) {
-		coords[i] = Math.random()*200 - 100;
-	}
-
-	const template = templates[numPairs];
-	const BUFFLENGTH = 109;
-	const X1_OFFSET = 7;
-	const Y1_OFFSET = 34;
-	const X2_OFFSET = 61;
-	const Y2_OFFSET = 88;
-
-	let coordIndex = 0;
-	for (let pairIndex = 0; pairIndex < numPairs; ++pairIndex) {
-		const startIndex = BUFFLENGTH * pairIndex + pairIndex;
-
-		let coord = coords[coordIndex++].toString().padStart(19, ' ');
-		let coordCharIndex = 0;
-		for (let charIndex = startIndex + X1_OFFSET; 
-			charIndex < startIndex + X1_OFFSET + 19;
-			++charIndex, ++coordCharIndex)
-		{
-			template[charIndex] = coord.charCodeAt(coordCharIndex);
-		}
-
-		coord = coords[coordIndex++].toString().padStart(19, ' ');
-		coordCharIndex = 0;
-		for (let charIndex = startIndex + Y1_OFFSET; 
-			charIndex < startIndex + Y1_OFFSET + 19;
-			++charIndex, ++coordCharIndex)
-		{
-			template[charIndex] = coord.charCodeAt(coordCharIndex);
-		}
-
-		coord = coords[coordIndex++].toString().padStart(19, ' ');
-		coordCharIndex = 0;
-		for (let charIndex = startIndex + X2_OFFSET; 
-			charIndex < startIndex + X2_OFFSET + 19;
-			++charIndex, ++coordCharIndex)
-		{
-			template[charIndex] = coord.charCodeAt(coordCharIndex);
-		}
-
-		coord = coords[coordIndex++].toString().padStart(19, ' ');
-		coordCharIndex = 0;
-		for (let charIndex = startIndex + Y2_OFFSET; 
-			charIndex < startIndex + Y2_OFFSET + 19;
-			++charIndex, ++coordCharIndex)
-		{
-			template[charIndex] = coord.charCodeAt(coordCharIndex);
-		}
-
-	}
-	return templates[numPairs];
-}
-
-function makeTemplate(numPairs) {
-	const template = `{"x0": ___________________, "y0": ___________________, "x1": ___________________, "y1": ___________________ }`;
-	const buf = new Uint8Array(template.length);
-	for (let i = 0; i < template.length; i++) {
-		buf[i] = template.charCodeAt(i);
-	}
-
-	const finalBuf = new Uint8Array(buf.length * numPairs + numPairs);
-	let bufIndex = 0;
-	for (let pairIndex = 0; pairIndex < numPairs; ++pairIndex) {
-		let charIndex = 0;
-		while (charIndex < buf.length) {
-			finalBuf[bufIndex++] = buf[charIndex++];
-		}
-
-		if (bufIndex < numPairs * buf.length - 2) {
-			finalBuf[bufIndex++] = ",".charCodeAt(0);
-		}
-	}
-
-	return finalBuf;
-}
-
 function printBuffer(buf) {
 	let text = '';
 	for (let i = 0; i < buf.length; ++i) {
@@ -154,56 +58,6 @@ function setAndCreate(number) {
 	const datapoints = document.querySelector("#generation input");
 	datapoints.value = number;
 	createAFile();
-}
-
-async function createAFile() {
-	const datapoints = document.querySelector("#generation input");
-	const progress = document.querySelector("#generation #progress");
-	const progresslevel = document.querySelector("#generation #progress #level");
-	const resultdiv = document.querySelector("#javascript-out");
-
-	const numPoints = datapoints.value;
-	
-	let showingProgress = false;
-	let fullWidth = 0;
-	if (numPoints > 1024) {
-		showingProgress = true;
-		progress.style.display = "flex";
-		progresslevel.style.width = '0px';
-		fullWidth = progress.getBoundingClientRect().width;
-	}
-
-	const newFileHandle = await window.showSaveFilePicker();
-	const writableStream = await newFileHandle.createWritable();
-	await writableStream.write('{ "pairs": [');
-
-	const start_time = performance.now();
-
-	const pairChunkSize = 1024;
-	for (let i = 0; i < (numPoints/pairChunkSize) - 1; ++i) {
-		const pair = generateMultipleCoordinatePairs(pairChunkSize) + ','
-		await writableStream.write(pair);
-		if (showingProgress && ((i % (512)) == 0)) {
-			progresslevel.style.width = (fullWidth * ((i*pairChunkSize) / numPoints)) + 'px';
-		}
-	}
-
-	await writableStream.write(generateMultipleCoordinatePairs(pairChunkSize));
-	await writableStream.write('] }');
-	const mid_time = performance.now();
-	progresslevel.style.background = 'green';
-	await writableStream.close();
-
-	const end_time = performance.now();
-	progresslevel.style.background = 'blue';
-	progress.style.display = "none";
-
-	resultdiv.innerText = `
-		Total time: ${end_time - start_time} ms
-		Time for generating and writing to stream: ${mid_time - start_time} ms
-		Time for closing stream and writing to disk: ${end_time - mid_time} ms
-	`;
-	// alert("File creation complete! You can click on Read file to view the result");
 }
 
 async function readAFile() {
@@ -241,7 +95,7 @@ function consumeOneCharacter(buffer, bufferIndex, character) {
 	return bufferIndex;
 }
 
-function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters) {
+function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters, numberStringBuffer) {
 	let charIndex = 0;
 	let numberLength = 16;
 	while (numberLength) {
@@ -254,23 +108,13 @@ function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, 
 	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
-	/*
-	while (numberCharacters[characterView[characterIndex]]) {
-		numberStringBuffer[charIndex++] = characterView[characterIndex++];
-	}
-	*/
 
-	// Just this split brings down the perf to 280 haversines per ms
-	/*
-	const numberString = String.fromCharCode.apply(undefined, numberStringBuffer);
-	floatBuffer[bufferIndex] = parseFloat(numberString);
-	*/
 	floatBuffer[bufferIndex] = parseFloat(String.fromCharCode.apply(undefined, numberStringBuffer));
 	return characterIndex;
 }
 
 async function calculate(characterView, startIndex, floatBuffer, numPairs, numberCharacters, 
-	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}) {
+	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}, numberStringBuffer) {
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
 	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2) {
@@ -281,7 +125,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	x, zero, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 0, numberCharacters);
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 0, numberCharacters, numberStringBuffer);
 		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// y0
@@ -289,7 +133,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	y, zero, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 1, numberCharacters);
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 1, numberCharacters, numberStringBuffer);
 		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// x1
@@ -297,7 +141,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	x, zero + 1, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 2, numberCharacters);
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 2, numberCharacters, numberStringBuffer);
 		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// y1
@@ -305,8 +149,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	y, zero + 1, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 3, numberCharacters);
-		// characterIndex = consumeCharacters(characterView, characterIndex, [comma]);
+		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 3, numberCharacters, numberStringBuffer);
 
 		characterIndex = consumeCharacters(characterView, characterIndex, [closeBrace, comma]);
 
@@ -331,7 +174,6 @@ async function readAFileAndParseIt() {
 	progresslevel.style.width = "0px";
 	const fullWidth = progress.getBoundingClientRect().width;
 
-	let haverSineSum = 0;
 	let numPairs = 0;
 
 	const [newFileHandle] = await window.showOpenFilePicker();
@@ -344,8 +186,6 @@ async function readAFileAndParseIt() {
 
 
 	const finish_reading = performance.now();
-
-	
 
 	const numberCharacters = new Array(58).fill(0);
 	numberCharacters[decimal] = 1;
@@ -369,20 +209,16 @@ async function readAFileAndParseIt() {
 	const floatBuffer = new Float64Array(5);
 	floatBuffer.fill(0);	
 
-	let characterIndex = 0;
-	
-	characterIndex = consumeCharacters(characterView, characterIndex, [openBrace]);
-	characterIndex = consumeCharacters(characterView, characterIndex, [quote]);
-	characterIndex = consumeCharacters(characterView, characterIndex, pairs);
-	characterIndex = consumeCharacters(characterView, characterIndex, [quote]);
-	characterIndex = consumeCharacters(characterView, characterIndex, [colon, openBracket]);
+	const numberStringBuffer = new Array(19).fill(space); 
+
+	let characterIndex = consumeCharacters(characterView, 0, [openBrace, quote, ...pairs, quote, colon, openBracket]);
 
 	const start_calculation = performance.now();
 
 	while (characterIndex < characterView.length) {
 		const result = await calculate(
 			characterView, characterIndex, floatBuffer, numPairs, 
-			numberCharacters, skipCharacters
+			numberCharacters, skipCharacters, numberStringBuffer
 		);
 
 		characterIndex = result.characterIndex;
@@ -427,14 +263,4 @@ window.onload = function() {
 	button.addEventListener("click", readAFileAndParseIt);
 }
 
-/*
-const start_time = performance.now();
-let pointsLeft = 1000 * 1000 * 10;
-while (pointsLeft--) {
-	haversine(36.12, -86.67, 33.94, -118.40);
-}
-const end_time = performance.now();
-const elapsed_time = (end_time - start_time);
-const measure = document.querySelector("#javascript-out");
-measure.innerText = `Time elapsed for js: ${elapsed_time}ms`;
-*/
+
