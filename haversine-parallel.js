@@ -14,6 +14,29 @@ const y = 121;
 const a = 97;
 const space = 32;
 
+/*
+const workerCommsSab = new SharedArrayBuffer(2 * 32);
+const workerComms = new Int32Array(workerCommsSab);
+*/
+
+const calcprogress = document.querySelector("#calculation #progress");
+const calcprogresslevel = document.querySelector("#calculation #progress #level");
+
+const parseWorker = new Worker("parseworker.js");
+parseWorker.onmessage = function(e) {
+	if (e.data.type === "parsed-points") {
+		performance.mark("parse-end");
+		averageHaverSine(e.data.parsedCoordinates);
+	} else if (e.data.type === "progress-update") {
+		if (e.data.level < 100) {
+			calcprogress.style.display = "flex";
+			calcprogresslevel.style.width = e.data.level + '%';
+		} else {
+			calcprogress.style.display = "none";
+		}
+	}
+}
+
 function radians(degrees) {
 	return degrees * 0.0174533;
 }
@@ -197,9 +220,23 @@ async function extractPoints(characterView, startIndex, numPairs, numberCharacte
 
 async function calculate(coordinates) {
 	let average = 0.0;
+	const totalCoordinates = coordinates.length;
+	let coordIndex = totalCoordinates;
 	for (let i = 0; i < coordinates.length; i += 4) {
 		average += haversine(coordinates[i + 0], coordinates[i + 2], coordinates[i + 1], coordinates[i + 3]);
 	}
+	/*
+	while (coordIndex) {
+		average += haversine(
+			coordinates[coordIndex - 3], 
+			coordinates[coordIndex - 1], 
+			coordinates[coordIndex - 2], 
+			coordinates[coordIndex]
+		);
+
+		coordIndex -= 4;
+	}
+	*/
 	return average/(coordinates.length/4);
 }
 
@@ -260,69 +297,35 @@ async function readAFileAndParseIt() {
 	progresslevel.style.width = "0px";
 	const fullWidth = progress.getBoundingClientRect().width;
 
-	let numPairs = 0;
-
 	const [newFileHandle] = await window.showOpenFilePicker();
 
 	const start_reading = performance.now();
 
 	const file = await newFileHandle.getFile();
 	const buffer = await file.arrayBuffer();
-	const characterView = new Uint8Array(buffer);
+	performance.mark("parse-start");
+	parseWorker.postMessage(buffer, [buffer]);
+}
 
-
-
-	const numberCharacters = new Array(58).fill(0);
-	numberCharacters[decimal] = 1;
-	numberCharacters[minus] = 1;
-	numberCharacters[space] = 1;
-	for (let i = 0; i < 10; ++i) {
-		numberCharacters[zero + i] = 1;
-	}
-
-	const skipCharacters = {
-		openBrace, comma, quote, x, y, zero, colon, closeBrace
-	};
-
-
-	let avgDistance = 0;
-	const numberStringBuffer = new Array(19).fill(space); 
-
-	let characterIndex = consumeCharacters(characterView, 0, [openBrace, quote, a, quote, colon]);
-	const totalPairsInFileRef = [];
-	characterIndex = consumePositiveInteger(characterView, characterIndex, numberStringBuffer, totalPairsInFileRef);
-	characterIndex = consumeCharacters(characterView, characterIndex, [comma, quote, ...pairs, quote, colon, openBracket]);
-	const totalPairsInFile = totalPairsInFileRef[0];
-	const parsedCoordinates = new Float32Array(totalPairsInFile * 4);
-
-
-	const result = await extractPoints(
-		characterView, characterIndex, numPairs, 
-		numberCharacters, skipCharacters, numberStringBuffer,
-		parsedCoordinates
-	);
-
-	const finish_reading = performance.now();
-
-	characterIndex = result.characterIndex;
-
+async function averageHaverSine(buffer) {
 	const start_calculation = performance.now();
-	avgDistance = await calculate(parsedCoordinates);
+	const parsedCoordinates = new Float32Array(buffer);
+	const avgDistance = await calculate(parsedCoordinates);
 	const end_calculation = performance.now();
 
-	const completion = fullWidth * characterIndex/characterView.length;
-	progresslevel.style.width = `${completion}px`;
-
-	progress.style.display = "none";
-
 	const domnode = document.querySelector("#javascript-out");
+	const totalPairsProcessed = parsedCoordinates.length / 4;
+
+	const parseMeasure = performance.measure("parse-measure", "parse-start", "parse-end");
+
 	domnode.innerText = `
 		Average: ${avgDistance}
-		Total pairs evaluated: ${totalPairsInFile}
-		Time for reading: ${finish_reading - start_reading} ms
+		Total pairs evaluated: ${totalPairsProcessed}
+		Time for parsing: ${parseMeasure.duration} ms
 		Time for calculation: ${end_calculation - start_calculation} ms
-		Haversines per ms: ${totalPairsInFile/(end_calculation - start_calculation)}
+		Haversines per ms: ${totalPairsProcessed/(end_calculation - start_calculation)}
 	`;
+	calcprogress.style.display = "none";
 }
 
 window.onload = function() {
