@@ -243,11 +243,17 @@ function consumeOneCharacter(buffer, bufferIndex, character) {
 
 function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters) {
 	let charIndex = 0;
-	let numberLength = 19;
-	while (numberLength--,numberLength--) {
+	let numberLength = 16;
+	while (numberLength) {
 		numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 		numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
+		numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
+		numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
+		numberLength -= 4;
 	}
+	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
+	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
+	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 	/*
 	while (numberCharacters[characterView[characterIndex]]) {
 		numberStringBuffer[charIndex++] = characterView[characterIndex++];
