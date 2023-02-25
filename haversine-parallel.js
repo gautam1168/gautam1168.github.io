@@ -132,11 +132,11 @@ function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, 
 	return characterIndex;
 }
 
-async function calculate(characterView, startIndex, floatBuffer, numPairs, numberCharacters, 
-	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}, numberStringBuffer) {
+async function extractPoints(characterView, startIndex, floatBuffer, numPairs, numberCharacters, 
+	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}, numberStringBuffer, outputBuffer) {
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
-	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2 * 2 * 2 * 2 * 2) {
+	while (characterIndex < characterView.length) {
 		characterIndex = consumeOneCharacter(characterView, characterIndex, openBrace);
 
 		// x0
@@ -144,7 +144,8 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	x, zero, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 0, numberCharacters, numberStringBuffer);
+		characterIndex = consumeNumber(characterView, characterIndex, outputBuffer, 
+			((numPairs + numPairsProcessed) * 4 + 0), numberCharacters, numberStringBuffer);
 		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// y0
@@ -152,7 +153,8 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	y, zero, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 1, numberCharacters, numberStringBuffer);
+		characterIndex = consumeNumber(characterView, characterIndex, outputBuffer, 
+			((numPairs + numPairsProcessed) * 4 + 1), numberCharacters, numberStringBuffer);
 		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// x1
@@ -160,7 +162,8 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	x, zero + 1, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 2, numberCharacters, numberStringBuffer);
+		characterIndex = consumeNumber(characterView, characterIndex, outputBuffer, 
+			((numPairs + numPairsProcessed) * 4 + 2), numberCharacters, numberStringBuffer);
 		characterIndex = consumeOneCharacter(characterView, characterIndex, comma);
 
 		// y1
@@ -168,14 +171,16 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			[quote,	y, zero + 1, quote, colon]
 		);
 
-		characterIndex = consumeNumber(characterView, characterIndex, floatBuffer, 3, numberCharacters, numberStringBuffer);
+		characterIndex = consumeNumber(characterView, characterIndex, outputBuffer, 
+			((numPairs + numPairsProcessed) * 4 + 3), numberCharacters, numberStringBuffer);
 
 		characterIndex = consumeCharacters(characterView, characterIndex, [closeBrace, comma]);
 
-		floatBuffer[4] += haversine(floatBuffer[0], floatBuffer[2], floatBuffer[1], floatBuffer[3]);
+		// floatBuffer[4] += haversine(floatBuffer[0], floatBuffer[2], floatBuffer[1], floatBuffer[3]);
 		numPairsProcessed++;
 	}
 
+	/*
 	return new Promise((resolve) => {
 		setTimeout(() => {
 			resolve({
@@ -184,6 +189,11 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 			});
 		})
 	});
+	*/
+	return {
+		numPairs: numPairs + numPairsProcessed,
+		characterIndex
+	};
 }
 
 async function createAFile() {
@@ -283,9 +293,10 @@ async function readAFileAndParseIt() {
 	const start_calculation = performance.now();
 
 	while (characterIndex < characterView.length) {
-		const result = await calculate(
+		const result = await extractPoints(
 			characterView, characterIndex, floatBuffer, numPairs, 
-			numberCharacters, skipCharacters, numberStringBuffer
+			numberCharacters, skipCharacters, numberStringBuffer,
+			parsedCoordinates
 		);
 
 		characterIndex = result.characterIndex;
