@@ -126,7 +126,9 @@ async function extractPoints(characterView, startIndex, endIndex, numPairs, numb
 }
 
 onmessage = async function(e) {
-	const characterView = new Uint8Array(e.data);
+	const workerIndex = e.data.workerIndex;
+	const numWorkers = e.data.numWorkers;
+	const characterView = new Uint8Array(e.data.buffer);
 
 	const numberCharacters = new Array(58).fill(0);
 	numberCharacters[decimal] = 1;
@@ -159,13 +161,15 @@ onmessage = async function(e) {
 		[comma, quote, ...pairs, quote, colon, openBracket]
 	);
 
+	const startIndex = 0;
+	const endIndex = characterView.length - 1;
+
 	const totalPairsInFile = totalPairsInFileRef[0];
-
 	const parsedCoordinates = new Float32Array(totalPairsInFile * 4);
-
 	let numPairs = 0;
+
 	await extractPoints(
-		characterView, characterIndex, characterView.length - 1, numPairs, 
+		characterView, startIndex, endIndex, numPairs, 
 		numberCharacters, skipCharacters, numberStringBuffer,
 		parsedCoordinates, totalPairsInFile
 	);

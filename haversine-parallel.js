@@ -173,7 +173,11 @@ async function readAFileAndParseIt() {
 	const file = await newFileHandle.getFile();
 	const buffer = await file.arrayBuffer();
 	performance.mark("parse-start");
-	parseWorker.postMessage(buffer, [buffer]);
+	parseWorker.postMessage({ 
+		buffer,  
+		workerIndex: 0,
+		numWorkers: 1
+	}, [buffer]);
 }
 
 async function averageHaverSine(buffer) {
