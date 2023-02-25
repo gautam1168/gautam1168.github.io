@@ -117,7 +117,7 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}, numberStringBuffer) {
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
-	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2) {
+	while (characterIndex < characterView.length && numPairsProcessed < 4096 * 2 * 2 * 2 * 2 * 2 * 2) {
 		characterIndex = consumeOneCharacter(characterView, characterIndex, openBrace);
 
 		// x0
