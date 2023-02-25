@@ -167,6 +167,56 @@ async function calculate(characterView, startIndex, floatBuffer, numPairs, numbe
 	});
 }
 
+async function createAFile() {
+	const datapoints = document.querySelector("#generation input");
+	const progress = document.querySelector("#generation #progress");
+	const progresslevel = document.querySelector("#generation #progress #level");
+	const resultdiv = document.querySelector("#javascript-out");
+
+	const numPoints = datapoints.value;
+	
+	let showingProgress = false;
+	let fullWidth = 0;
+	if (numPoints > 1024) {
+		showingProgress = true;
+		progress.style.display = "flex";
+		progresslevel.style.width = '0px';
+		fullWidth = progress.getBoundingClientRect().width;
+	}
+
+	const newFileHandle = await window.showSaveFilePicker();
+	const writableStream = await newFileHandle.createWritable();
+	await writableStream.write('{ "pairs": [');
+
+	const start_time = performance.now();
+
+	const pairChunkSize = 1024;
+	for (let i = 0; i < (numPoints/pairChunkSize) - 1; ++i) {
+		const pair = generateMultipleCoordinatePairs(pairChunkSize) + ','
+		await writableStream.write(pair);
+		if (showingProgress && ((i % (512)) == 0)) {
+			progresslevel.style.width = (fullWidth * ((i*pairChunkSize) / numPoints)) + 'px';
+		}
+	}
+
+	await writableStream.write(generateMultipleCoordinatePairs(pairChunkSize));
+	await writableStream.write('] }');
+	const mid_time = performance.now();
+	progresslevel.style.background = 'green';
+	await writableStream.close();
+
+	const end_time = performance.now();
+	progresslevel.style.background = 'blue';
+	progress.style.display = "none";
+
+	resultdiv.innerText = `
+		Total time: ${end_time - start_time} ms
+		Time for generating and writing to stream: ${mid_time - start_time} ms
+		Time for closing stream and writing to disk: ${end_time - mid_time} ms
+	`;
+	// alert("File creation complete! You can click on Read file to view the result");
+}
+
 async function readAFileAndParseIt() {
 	const progress = document.querySelector("#calculation #progress");
 	const progresslevel = document.querySelector("#calculation #progress #level");
