@@ -11,6 +11,7 @@ const minus = 45;
 const zero = 48;
 const x = 120;
 const y = 121;
+const a = 97;
 const space = 32;
 
 function radians(degrees) {
@@ -95,6 +96,24 @@ function consumeOneCharacter(buffer, bufferIndex, character) {
 	return bufferIndex;
 }
 
+function consumePositiveInteger(characterView, characterIndex, numberStringBuffer, parsedNumber) {
+	let charIndex = 0;
+	const allowedCharacters = new Array(58).fill(0);
+	allowedCharacters[space] = 1;
+	for (let i = 0; i < 10; ++i) {
+		allowedCharacters[zero + i] = 1;
+	}
+
+	numberStringBuffer.fill(32);
+	while (allowedCharacters[characterView[characterIndex]]) {
+		numberStringBuffer[charIndex++] = characterView[characterIndex++];
+	}
+
+	parsedNumber[0] = parseInt(String.fromCharCode(...numberStringBuffer));
+
+	return characterIndex;
+}
+
 function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters, numberStringBuffer) {
 	let charIndex = 0;
 	let numberLength = 16;
@@ -173,7 +192,7 @@ async function createAFile() {
 	const progresslevel = document.querySelector("#generation #progress #level");
 	const resultdiv = document.querySelector("#javascript-out");
 
-	const numPoints = datapoints.value;
+	const numPoints = parseInt(datapoints.value);
 	
 	let showingProgress = false;
 	let fullWidth = 0;
@@ -186,7 +205,7 @@ async function createAFile() {
 
 	const newFileHandle = await window.showSaveFilePicker();
 	const writableStream = await newFileHandle.createWritable();
-	await writableStream.write('{ "pairs": [');
+	await writableStream.write(`{ "a": ${numPoints}, "pairs": [`);
 
 	const start_time = performance.now();
 
@@ -241,16 +260,9 @@ async function readAFileAndParseIt() {
 	numberCharacters[decimal] = 1;
 	numberCharacters[minus] = 1;
 	numberCharacters[space] = 1;
-	numberCharacters[zero] = 1;
-	numberCharacters[zero + 1] = 1;
-	numberCharacters[zero + 2] = 1;
-	numberCharacters[zero + 3] = 1;
-	numberCharacters[zero + 4] = 1;
-	numberCharacters[zero + 5] = 1;
-	numberCharacters[zero + 6] = 1;
-	numberCharacters[zero + 7] = 1;
-	numberCharacters[zero + 8] = 1;
-	numberCharacters[zero + 9] = 1;
+	for (let i = 0; i < 10; ++i) {
+		numberCharacters[zero + i] = 1;
+	}
 
 	const skipCharacters = {
 		openBrace, comma, quote, x, y, zero, colon, closeBrace
@@ -261,7 +273,12 @@ async function readAFileAndParseIt() {
 
 	const numberStringBuffer = new Array(19).fill(space); 
 
-	let characterIndex = consumeCharacters(characterView, 0, [openBrace, quote, ...pairs, quote, colon, openBracket]);
+	let characterIndex = consumeCharacters(characterView, 0, [openBrace, quote, a, quote, colon]);
+	const totalPairsInFileRef = [];
+	characterIndex = consumePositiveInteger(characterView, characterIndex, numberStringBuffer, totalPairsInFileRef);
+	characterIndex = consumeCharacters(characterView, characterIndex, [comma, quote, ...pairs, quote, colon, openBracket]);
+	const totalPairsInFile = totalPairsInFileRef[0];
+	const parsedCoordinates = new Float32Array(totalPairsInFile * 4);
 
 	const start_calculation = performance.now();
 
