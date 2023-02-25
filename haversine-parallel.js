@@ -25,7 +25,6 @@ const calcprogresslevel = document.querySelector("#calculation #progress #level"
 const parseWorker = new Worker("parseworker.js");
 parseWorker.onmessage = function(e) {
 	if (e.data.type === "parsed-points") {
-		performance.mark("parse-end");
 		averageHaverSine(e.data.parsedCoordinates);
 	} else if (e.data.type === "progress-update") {
 		if (e.data.level < 100) {
@@ -293,6 +292,8 @@ async function createAFile() {
 async function readAFileAndParseIt() {
 	const progress = document.querySelector("#calculation #progress");
 	const progresslevel = document.querySelector("#calculation #progress #level");
+	const domnode = document.querySelector("#javascript-out");
+	domnode.innerText = "";
 	progress.style.display = "flex";
 	progresslevel.style.width = "0px";
 	const fullWidth = progress.getBoundingClientRect().width;
@@ -308,8 +309,10 @@ async function readAFileAndParseIt() {
 }
 
 async function averageHaverSine(buffer) {
-	const start_calculation = performance.now();
 	const parsedCoordinates = new Float32Array(buffer);
+	performance.mark("parse-end");
+
+	const start_calculation = performance.now();
 	const avgDistance = await calculate(parsedCoordinates);
 	const end_calculation = performance.now();
 
