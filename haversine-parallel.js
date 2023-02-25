@@ -114,7 +114,7 @@ function consumePositiveInteger(characterView, characterIndex, numberStringBuffe
 	return characterIndex;
 }
 
-function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, numberCharacters, numberStringBuffer) {
+function consumeNumber(characterView, characterIndex, outputBuffer, bufferIndex, numberCharacters, numberStringBuffer) {
 	let charIndex = 0;
 	let numberLength = 16;
 	while (numberLength) {
@@ -128,11 +128,11 @@ function consumeNumber(characterView, characterIndex, floatBuffer, bufferIndex, 
 	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 
-	floatBuffer[bufferIndex] = parseFloat(String.fromCharCode.apply(undefined, numberStringBuffer));
+	outputBuffer[bufferIndex] = parseFloat(String.fromCharCode.apply(undefined, numberStringBuffer));
 	return characterIndex;
 }
 
-async function extractPoints(characterView, startIndex, floatBuffer, numPairs, numberCharacters, 
+async function extractPoints(characterView, startIndex, numPairs, numberCharacters, 
 	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}, numberStringBuffer, outputBuffer) {
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
@@ -176,7 +176,6 @@ async function extractPoints(characterView, startIndex, floatBuffer, numPairs, n
 
 		characterIndex = consumeCharacters(characterView, characterIndex, [closeBrace, comma]);
 
-		// floatBuffer[4] += haversine(floatBuffer[0], floatBuffer[2], floatBuffer[1], floatBuffer[3]);
 		numPairsProcessed++;
 	}
 
@@ -194,6 +193,14 @@ async function extractPoints(characterView, startIndex, floatBuffer, numPairs, n
 		numPairs: numPairs + numPairsProcessed,
 		characterIndex
 	};
+}
+
+async function calculate(coordinates) {
+	let average = 0.0;
+	for (let i = 0; i < coordinates.length; i += 4) {
+		average += haversine(coordinates[i + 0], coordinates[i + 2], coordinates[i + 1], coordinates[i + 3]);
+	}
+	return average/(coordinates.length/4);
 }
 
 async function createAFile() {
@@ -264,7 +271,6 @@ async function readAFileAndParseIt() {
 	const characterView = new Uint8Array(buffer);
 
 
-	const finish_reading = performance.now();
 
 	const numberCharacters = new Array(58).fill(0);
 	numberCharacters[decimal] = 1;
@@ -278,9 +284,8 @@ async function readAFileAndParseIt() {
 		openBrace, comma, quote, x, y, zero, colon, closeBrace
 	};
 
-	const floatBuffer = new Float64Array(5);
-	floatBuffer.fill(0);	
 
+	let avgDistance = 0;
 	const numberStringBuffer = new Array(19).fill(space); 
 
 	let characterIndex = consumeCharacters(characterView, 0, [openBrace, quote, a, quote, colon]);
@@ -290,32 +295,33 @@ async function readAFileAndParseIt() {
 	const totalPairsInFile = totalPairsInFileRef[0];
 	const parsedCoordinates = new Float32Array(totalPairsInFile * 4);
 
+
+	const result = await extractPoints(
+		characterView, characterIndex, numPairs, 
+		numberCharacters, skipCharacters, numberStringBuffer,
+		parsedCoordinates
+	);
+
+	const finish_reading = performance.now();
+
+	characterIndex = result.characterIndex;
+
 	const start_calculation = performance.now();
-
-	while (characterIndex < characterView.length) {
-		const result = await extractPoints(
-			characterView, characterIndex, floatBuffer, numPairs, 
-			numberCharacters, skipCharacters, numberStringBuffer,
-			parsedCoordinates
-		);
-
-		characterIndex = result.characterIndex;
-		numPairs = result.numPairs;
-
-		const completion = fullWidth * characterIndex/characterView.length;
-		progresslevel.style.width = `${completion}px`;
-	}
-
+	avgDistance = await calculate(parsedCoordinates);
 	const end_calculation = performance.now();
+
+	const completion = fullWidth * characterIndex/characterView.length;
+	progresslevel.style.width = `${completion}px`;
+
 	progress.style.display = "none";
 
 	const domnode = document.querySelector("#javascript-out");
 	domnode.innerText = `
-		Average: ${floatBuffer[4]/numPairs}
-		Total pairs evaluated: ${numPairs}
+		Average: ${avgDistance}
+		Total pairs evaluated: ${totalPairsInFile}
 		Time for reading: ${finish_reading - start_reading} ms
 		Time for calculation: ${end_calculation - start_calculation} ms
-		Haversines per ms: ${numPairs/(end_calculation - start_calculation)}
+		Haversines per ms: ${totalPairsInFile/(end_calculation - start_calculation)}
 	`;
 }
 
