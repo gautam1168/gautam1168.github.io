@@ -105,6 +105,8 @@ function printBuffer(buf) {
 }
 
 function setAndCreate(number) {
+	workerResults.worker1.receivedResult = false;
+	workerResults.worker2.receivedResult = false;
 	const datapoints = document.querySelector("#generation input");
 	datapoints.value = number;
 	createAFile();
@@ -179,6 +181,8 @@ async function createAFile() {
 }
 
 async function readAFileAndParseIt() {
+	workerResults.worker1.receivedResult = false;
+	workerResults.worker2.receivedResult = false;
 	const progress = document.querySelector("#calculation #progress");
 	const progresslevel = document.querySelector("#calculation #progress #level");
 	const domnode = document.querySelector("#javascript-out");
