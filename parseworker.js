@@ -13,6 +13,26 @@ const x = 120;
 const y = 121;
 const a = 97;
 const space = 32;
+
+function radians(degrees) {
+	return degrees * 0.0174533;
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+	const R = 6372.8;
+
+	const dLat = radians(lat2 - lat1);
+	const dLon = radians(lon2 - lon1);
+
+	lat1 = radians(lat1);
+	lat2 = radians(lat2);
+
+	const a = Math.sin(dLat/2)**2 + Math.cos(lat2)*Math.cos(lat1)*(Math.sin(dLon/2)**2);
+	const c = 2 * R * Math.asin(Math.sqrt(a));
+
+	return c;
+}
+
 function consumeCharacters(buffer, bufferIndex, charactersToConsume) {
 	let numCharactersConsumed = 0;
 	while (numCharactersConsumed < charactersToConsume.length && bufferIndex < buffer.length) {
@@ -66,7 +86,7 @@ function consumeNumber(characterView, characterIndex, outputBuffer, bufferIndex,
 	return characterIndex;
 }
 
-async function extractPoints(characterView, startIndex, endIndex, numPairs, 
+function extractPoints(characterView, startIndex, endIndex, numPairs, 
 	numberCharacters, numberStringBuffer, 
 	outputBuffer, pairsToParse) {
 	let prevUpdateTime = performance.now();
@@ -124,9 +144,40 @@ async function extractPoints(characterView, startIndex, endIndex, numPairs,
 			});
 		} 
 	}
+	return numPairsProcessed;
+}
+
+function averageHaverSine(parsedCoordinates) {
+	const start_time = performance.now();
+	const pairSum = calculate(parsedCoordinates);
+	const end_time = performance.now();
+	return { sum: pairSum, time: end_time - start_time };
+}
+
+function calculate(coordinates) {
+	let sum = 0.0;
+	const totalCoordinates = coordinates.length;
+	let coordIndex = totalCoordinates;
+	for (let i = 0; i < coordinates.length; i += 4) {
+		sum += haversine(coordinates[i + 0], coordinates[i + 2], coordinates[i + 1], coordinates[i + 3]);
+	}
+	/*
+	while (coordIndex) {
+		average += haversine(
+			coordinates[coordIndex - 3], 
+			coordinates[coordIndex - 1], 
+			coordinates[coordIndex - 2], 
+			coordinates[coordIndex]
+		);
+
+		coordIndex -= 4;
+	}
+	*/
+	return sum;
 }
 
 onmessage = async function(e) {
+	const parse_start = performance.now();
 	const workerIndex = e.data.workerIndex;
 	const numWorkers = e.data.numWorkers;
 
@@ -177,18 +228,23 @@ onmessage = async function(e) {
 
 	const pairsToParse = Math.ceil(totalPairsInFileRef[0]/numWorkers);
 	const parsedCoordinates = new Float32Array(pairsToParse * 4);
-	let numPairs = 0;
 
-	await extractPoints(
-		characterView, startIndex, endIndex, numPairs, 
+	const numPairs = extractPoints(
+		characterView, startIndex, endIndex, 0, 
 		numberCharacters, numberStringBuffer,
 		parsedCoordinates, pairsToParse
 	);
+	
+	const parse_end = performance.now();
+
+	const res = averageHaverSine(parsedCoordinates);
 
 	postMessage({
-		parsedCoordinates,
+		pairs: numPairs,
+		sum: res.sum,
+		calc_time: res.time,
+		parse_time: parse_end - parse_start,
 		type: "parsed-points",
 		index: self.index
-	}, 
-		[parsedCoordinates.buffer]);
+	});
 }

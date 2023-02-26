@@ -10,14 +10,16 @@ const calcprogresslevel1 = document.querySelector("#calculation #progress #level
 const workerResults = {
 	worker1: {
 		pairs: 0,
-		time: 0.0,
-		haversinetotal: 0,
+		calc_time: 0.0,
+		parse_time: 0.0,
+		haversinetotal: 0.0,
 		receivedResult: false
 	},
 	worker2: {
 		pairs: 0,
-		time: 0.0,
-		haversinetotal: 0,
+		calc_time: 0.0,
+		parse_time: 0.0,
+		haversinetotal: 0.0,
 		receivedResult: false
 	}
 };
@@ -31,17 +33,14 @@ function setWorkerResult(key, value) {
 		const avg = (workerResults.worker1.haversinetotal + workerResults.worker2.haversinetotal)/
 			(workerResults.worker1.pairs + workerResults.worker2.pairs);
 
-		const parse1time = performance.measure("parse-1", "parse-start-1", "parse-end-1");
-		const parse2time = performance.measure("parse-2", "parse-start-2", "parse-end-2");
-
 		const totalPairsProcessed = workerResults.worker1.pairs + workerResults.worker2.pairs;
-		const totalCalcTime = workerResults.worker1.time + workerResults.worker2.time;
+		const totalCalcTime = workerResults.worker1.calc_time + workerResults.worker2.calc_time;
 
 		domnode.innerText = `
 			Average: ${avg}
 			Total pairs evaluated: ${totalPairsProcessed}
-			Time for parsing worker1: ${parse1time.duration} ms 
-			Time for parsing worker2: ${parse2time.duration} ms
+			Time for parsing worker1: ${workerResults.worker1.parse_time} ms 
+			Time for parsing worker2: ${workerResults.worker2.parse_time} ms
 			Time for calculation: ${totalCalcTime} ms
 			Haversines per ms: ${totalPairsProcessed/totalCalcTime}
 		`;
@@ -53,13 +52,12 @@ const parseWorker1 = new Worker("parseworker.js");
 parseWorker1.onmessage = function(e) {
 	if (e.data.index == 0 && e.data.type === "parsed-points") {
 		const parsedCoordinates = new Float32Array(e.data.parsedCoordinates);
-		performance.mark("parse-end-1");
-		const result = averageHaverSine(parsedCoordinates);
 		setWorkerResult('worker1', {
-			pairs: parsedCoordinates.length/4,
-			haversinetotal: result.sum,
+			pairs: e.data.pairs,
+			haversinetotal: e.data.sum,
 			receivedResult: true,
-			time: result.time
+			calc_time: e.data.calc_time,
+			parse_time: e.data.parse_time
 		});
 	} else if (e.data.index == 0 && e.data.type === "progress-update") {
 		calcprogress.style.display = "flex";
@@ -71,37 +69,17 @@ const parseWorker2 = new Worker("parseworker.js");
 parseWorker2.onmessage = function(e) {
 	if (e.data.index == 1 && e.data.type === "parsed-points") {
 		const parsedCoordinates = new Float32Array(e.data.parsedCoordinates);
-		performance.mark("parse-end-2");
-		const result = averageHaverSine(parsedCoordinates);
 		setWorkerResult('worker2', {
-			pairs: parsedCoordinates.length/4,
-			haversinetotal: result.sum,
+			pairs: e.data.pairs,
+			haversinetotal: e.data.sum,
 			receivedResult: true,
-			time: result.time
+			calc_time: e.data.calc_time,
+			parse_time: e.data.parse_time
 		});
 	} else if (e.data.index == 1 && e.data.type === "progress-update") {
 		calcprogress.style.display = "flex";
 		calcprogresslevel1.style.width = e.data.level + '%';
 	}
-}
-
-function radians(degrees) {
-	return degrees * 0.0174533;
-}
-
-function haversine(lat1, lon1, lat2, lon2) {
-	const R = 6372.8;
-
-	const dLat = radians(lat2 - lat1);
-	const dLon = radians(lon2 - lon1);
-
-	lat1 = radians(lat1);
-	lat2 = radians(lat2);
-
-	const a = Math.sin(dLat/2)**2 + Math.cos(lat2)*Math.cos(lat1)*(Math.sin(dLon/2)**2);
-	const c = 2 * R * Math.asin(Math.sqrt(a));
-
-	return c;
 }
 
 function generateMultipleCoordinatePairs(numPairs) {
@@ -148,28 +126,6 @@ async function readAFile() {
 
 	const domnode = document.querySelector("#javascript-out");
 	domnode.innerText = contents;
-}
-
-function calculate(coordinates) {
-	let sum = 0.0;
-	const totalCoordinates = coordinates.length;
-	let coordIndex = totalCoordinates;
-	for (let i = 0; i < coordinates.length; i += 4) {
-		sum += haversine(coordinates[i + 0], coordinates[i + 2], coordinates[i + 1], coordinates[i + 3]);
-	}
-	/*
-	while (coordIndex) {
-		average += haversine(
-			coordinates[coordIndex - 3], 
-			coordinates[coordIndex - 1], 
-			coordinates[coordIndex - 2], 
-			coordinates[coordIndex]
-		);
-
-		coordIndex -= 4;
-	}
-	*/
-	return sum;
 }
 
 async function createAFile() {
@@ -233,34 +189,23 @@ async function readAFileAndParseIt() {
 
 	const [newFileHandle] = await window.showOpenFilePicker();
 
-	const start_reading = performance.now();
-
 	const file = await newFileHandle.getFile();
 	const buffer = await file.arrayBuffer();
 
 	const buffercopy = buffer.slice(0, buffer.byteLength);
 
-	performance.mark("parse-start-1");
 	parseWorker2.postMessage({ 
 		buffer: buffercopy,  
 		workerIndex: 1,
 		numWorkers: 2
 	}, [buffercopy]);
 	
-	performance.mark("parse-start-2");
 	parseWorker1.postMessage({ 
 		buffer,  
 		workerIndex: 0,
 		numWorkers: 2
 	}, [buffer]);
 	
-}
-
-function averageHaverSine(parsedCoordinates) {
-	const start_time = performance.now();
-	const pairSum = calculate(parsedCoordinates);
-	const end_time = performance.now();
-	return { sum: pairSum, time: end_time - start_time };
 }
 
 window.onload = function() {
