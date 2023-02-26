@@ -19,17 +19,20 @@
 }
 
 #progress {
-	height: 4px;
 	border: solid 1px #ccc;
-	display: none;
 	width: 100%;
+	display: flex;
+	flex-direction: column;
+	display: none;
 }
 
+#progress #level-1,
 #progress #level {
-	height: 100%;
+	height: 4px;
 	background: blue;
-	width: 50%;
-	display: flex;
-	justify-content: center;
-	color: white;
+	width: 0;
+}
+
+#progress #level-1 {
+	background: red;
 }

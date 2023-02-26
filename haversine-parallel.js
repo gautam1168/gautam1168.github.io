@@ -5,18 +5,25 @@ const workerComms = new Int32Array(workerCommsSab);
 
 const calcprogress = document.querySelector("#calculation #progress");
 const calcprogresslevel = document.querySelector("#calculation #progress #level");
+const calcprogresslevel1 = document.querySelector("#calculation #progress #level-1");
 
-const parseWorker = new Worker("parseworker.js");
-parseWorker.onmessage = function(e) {
-	if (e.data.type === "parsed-points") {
+const parseWorker1 = new Worker("parseworker.js");
+parseWorker1.onmessage = function(e) {
+	if (e.data.index == 0 && e.data.type === "parsed-points") {
 		averageHaverSine(e.data.parsedCoordinates);
-	} else if (e.data.type === "progress-update") {
-		if (e.data.level < 100) {
-			calcprogress.style.display = "flex";
-			calcprogresslevel.style.width = e.data.level + '%';
-		} else {
-			calcprogress.style.display = "none";
-		}
+	} else if (e.data.index == 0 && e.data.type === "progress-update") {
+		calcprogress.style.display = "flex";
+		calcprogresslevel.style.width = e.data.level + '%';
+	}
+}
+
+const parseWorker2 = new Worker("parseworker.js");
+parseWorker2.onmessage = function(e) {
+	if (e.data.index == 1 && e.data.type === "parsed-points") {
+		averageHaverSine(e.data.parsedCoordinates);
+	} else if (e.data.index == 1 && e.data.type === "progress-update") {
+		calcprogress.style.display = "flex";
+		calcprogresslevel1.style.width = e.data.level + '%';
 	}
 }
 
@@ -173,11 +180,21 @@ async function readAFileAndParseIt() {
 	const file = await newFileHandle.getFile();
 	const buffer = await file.arrayBuffer();
 	performance.mark("parse-start");
-	parseWorker.postMessage({ 
+
+	const buffercopy = buffer.slice(0, buffer.byteLength);
+	parseWorker2.postMessage({ 
+		buffer: buffercopy,  
+		workerIndex: 1,
+		numWorkers: 2
+	}, [buffercopy]);
+
+	
+	parseWorker1.postMessage({ 
 		buffer,  
 		workerIndex: 0,
-		numWorkers: 1
+		numWorkers: 2
 	}, [buffer]);
+	
 }
 
 async function averageHaverSine(buffer) {

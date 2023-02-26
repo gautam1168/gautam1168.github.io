@@ -66,13 +66,13 @@ function consumeNumber(characterView, characterIndex, outputBuffer, bufferIndex,
 	return characterIndex;
 }
 
-async function extractPoints(characterView, startIndex, endIndex, numPairs, numberCharacters, 
-	{ openBrace, comma, quote, x, y, zero, colon, closeBrace}, 
-	numberStringBuffer, outputBuffer, totalPairsInFile) {
+async function extractPoints(characterView, startIndex, endIndex, numPairs, 
+	numberCharacters, numberStringBuffer, 
+	outputBuffer, pairsToParse) {
 	let prevUpdateTime = performance.now();
 	let characterIndex = startIndex;
 	let numPairsProcessed = 0;
-	while (characterIndex <= endIndex) {
+	while (numPairsProcessed <= pairsToParse && characterIndex <= endIndex) {
 		characterIndex = consumeOneCharacter(characterView, characterIndex, openBrace);
 
 		// x0
@@ -119,7 +119,8 @@ async function extractPoints(characterView, startIndex, endIndex, numPairs, numb
 			prevUpdateTime = now;
 			postMessage({
 				type: "progress-update",
-				level: 100 * ((characterIndex - startIndex)/(endIndex - startIndex))
+				level: 100 * (numPairsProcessed / pairsToParse),
+				index: self.index
 			});
 		} 
 	}
@@ -128,7 +129,12 @@ async function extractPoints(characterView, startIndex, endIndex, numPairs, numb
 onmessage = async function(e) {
 	const workerIndex = e.data.workerIndex;
 	const numWorkers = e.data.numWorkers;
+
+	self.index = workerIndex;
 	const characterView = new Uint8Array(e.data.buffer);
+
+	let startIndex = 0;
+	let endIndex = characterView.length - 1;
 
 	const numberCharacters = new Array(58).fill(0);
 	numberCharacters[decimal] = 1;
@@ -138,16 +144,12 @@ onmessage = async function(e) {
 		numberCharacters[zero + i] = 1;
 	}
 
-	const skipCharacters = {
-		openBrace, comma, quote, x, y, zero, colon, closeBrace
-	};
-
-
-	let avgDistance = 0;
+	const totalPairsInFileRef = [];
 	const numberStringBuffer = new Array(19).fill(space); 
 
-	let characterIndex = consumeCharacters(characterView, 0, [openBrace, quote, a, quote, colon]);
-	const totalPairsInFileRef = [];
+	let characterIndex = startIndex;
+	characterIndex = consumeCharacters(characterView, characterIndex, [openBrace, quote, a, quote, colon]);
+
 	characterIndex = consumePositiveInteger(
 		characterView, 
 		characterIndex, 
@@ -161,22 +163,32 @@ onmessage = async function(e) {
 		[comma, quote, ...pairs, quote, colon, openBracket]
 	);
 
-	const startIndex = 0;
-	const endIndex = characterView.length - 1;
+	if (self.index == 0) {
+		endIndex = Math.ceil((characterView.length - characterIndex) / numWorkers);
+		while (characterView[endIndex] !== closeBrace) {
+			endIndex++;
+		}
+	} else {
+		startIndex = Math.floor((characterView.length - characterIndex) / numWorkers);
+		while (characterView[startIndex] !== openBrace) {
+			startIndex--;
+		}
+	}
 
-	const totalPairsInFile = totalPairsInFileRef[0];
-	const parsedCoordinates = new Float32Array(totalPairsInFile * 4);
+	const pairsToParse = Math.ceil(totalPairsInFileRef[0]/numWorkers);
+	const parsedCoordinates = new Float32Array(pairsToParse * 4);
 	let numPairs = 0;
 
 	await extractPoints(
 		characterView, startIndex, endIndex, numPairs, 
-		numberCharacters, skipCharacters, numberStringBuffer,
-		parsedCoordinates, totalPairsInFile
+		numberCharacters, numberStringBuffer,
+		parsedCoordinates, pairsToParse
 	);
 
 	postMessage({
 		parsedCoordinates,
-		type: "parsed-points"
+		type: "parsed-points",
+		index: self.index
 	}, 
 		[parsedCoordinates.buffer]);
 }
