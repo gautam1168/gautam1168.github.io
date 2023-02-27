@@ -14,6 +14,35 @@ const y = 121;
 const a = 97;
 const space = 32;
 
+function parseNumber(bytes) {
+	let afterDecimal = false;
+	let number = 0;
+	let isNegative = false;
+
+	for (let i = 0; i < bytes.length; ++i) {
+		const charCode = bytes[i];
+		if (charCode >= zero) {
+			const digit = charCode - zero;
+			if (afterDecimal) {
+				number = number + (digit * 0.1);
+			} else {
+				number = (number * 10) + digit;
+			}
+		} else if (charCode == space) {
+			continue;
+		} else if (charCode == decimal) {
+			afterDecimal = true;
+		} else if (charCode == minus) {
+			isNegative = true;
+		}
+	}
+
+	if (isNegative) {
+		number = -number;
+	}
+	return number;
+}
+
 function radians(degrees) {
 	return degrees * 0.0174533;
 }
@@ -82,7 +111,8 @@ function consumeNumber(characterView, characterIndex, outputBuffer, bufferIndex,
 	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 	numberStringBuffer[charIndex++] = numberCharacters[characterView[characterIndex]] ? characterView[characterIndex++] : 32;
 
-	outputBuffer[bufferIndex] = parseFloat(String.fromCharCode.apply(undefined, numberStringBuffer));
+	outputBuffer[bufferIndex] = parseNumber(numberStringBuffer);
+	//outputBuffer[bufferIndex] = parseFloat(String.fromCharCode.apply(undefined, numberStringBuffer));
 	return characterIndex;
 }
 
