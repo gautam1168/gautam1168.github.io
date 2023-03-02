@@ -1,0 +1,61 @@
+<html>
+  <head>
+    <title>Haversin</title>
+		<script src="disassemble.js" async defer></script>
+		<link rel="stylesheet" href="main.css">
+		<link rel="stylesheet" href="disassemble.css">
+  </head>
+  <body>
+		<div id="breadcrumb">
+			<a href="/index.html">Home</a>
+		</div>
+		<h3>Disassemble 8086</h3>
+		<div>
+			<button id="choosebin">Choose binary</button>
+		</div>
+
+		<div>
+			<div>Binary</div>
+			<div id="binarydata"></div>
+		</div>
+
+		<div>
+			<div>ASM</div>
+			<div id="decompiled"></div>
+		</div>
+
+		<div>
+			<div>Slotted view</div>
+			<div id="slottedview">
+				<div class="instruction">
+					<div>INSTRUCTION</div>
+					<div class="bits"></div>
+					<div class="mnemonic"></div>
+				</div>
+				<div class="d">
+					<div>D</div>
+					<div class="bits"></div>
+				</div>
+				<div class="w">
+					<div>W</div>
+					<div class="bits"></div>
+				</div>
+				<div class="mod">
+					<div>MOD</div>
+					<div class="bits"></div>
+				</div>
+				<div class="reg">
+					<div>REG</div>
+					<div class="bits"></div>
+					<div class="regname"></div>
+				</div>
+				<div class="r-m">
+					<div>R/M</div>
+					<div class="bits"></div>
+					<div class="rmname"></div>
+				</div>
+			</div>
+		</div>
+
+	</body>
+</html>
