@@ -188,21 +188,24 @@ function calculate(coordinates) {
 	let sum = 0.0;
 	const totalCoordinates = coordinates.length;
 	let coordIndex = totalCoordinates;
-	for (let i = 0; i < coordinates.length; i += 4) {
-		sum += haversine(coordinates[i + 0], coordinates[i + 2], coordinates[i + 1], coordinates[i + 3]);
-	}
-	/*
-	while (coordIndex) {
-		average += haversine(
-			coordinates[coordIndex - 3], 
-			coordinates[coordIndex - 1], 
-			coordinates[coordIndex - 2], 
-			coordinates[coordIndex]
-		);
 
-		coordIndex -= 4;
+	for (let i = 0; i < coordinates.length; i += 4) {
+		const lat1 = coordinates[i];
+		const lon1 = coordinates[i + 1];
+		const lat2 = coordinates[i + 2];
+		const lon2 = coordinates[i + 3];
+		const R = 6372.8;
+
+		const dLat = radians(lat2 - lat1);
+		const dLon = radians(lon2 - lon1);
+
+		lat1 = radians(lat1);
+		lat2 = radians(lat2);
+
+		const a = Math.sin(dLat/2)**2 + Math.cos(lat2)*Math.cos(lat1)*(Math.sin(dLon/2)**2);
+		sum += 2 * R * Math.asin(Math.sqrt(a));
 	}
-	*/
+
 	return sum;
 }
 

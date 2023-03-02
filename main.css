@@ -36,3 +36,8 @@
 #progress #level-1 {
 	background: red;
 }
+
+#breadcrumb {
+	display: flex;
+	grid-gap: 20px;
+}
