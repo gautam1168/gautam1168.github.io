@@ -1,0 +1,8 @@
+bits 16
+
+ADD AL, BL
+ADD AX, BX
+ADD BL, AL
+ADD BX, AX
+ADD AL, 1
+ADD AX, 0x0f

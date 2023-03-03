@@ -1,16 +1,15 @@
 <html>
   <head>
     <title>Haversin</title>
-		<script src="haversin.js" async defer></script>
-		<link rel="stylesheet" href="main.css">
+		<script src="haversine-parallel.js" async defer></script>
+		<link rel="stylesheet" href="/main.css">
   </head>
   <body>
 		<div id="breadcrumb">
 			<a href="/index.html">Home</a>
-			<a href="/multithreaded.html">Go To Multithreaded Version</a>
+			<a href="singlethreaded.html">Go To Single Thread Simpler Version</a>
 		</div>
-		<h3>This page uses experimental API's. Use Chrome!!</h3>
-		
+		<h3>Multithreaded. Use Chrome!!</h3>
 		<div id="controls">
 			<div id="generation">
 				<div>Generate data files</div>
@@ -28,8 +27,10 @@
 			</div>
 			<div id="calculation">
 				<div>Run the calculation on a data file. (Click the button to choose a file)</div>
+				<div style="font-size: 10px;">Parse progress</div>
 				<div id="progress">
 					<div id="level"></div>
+					<div id="level-1"></div>
 				</div>
 				<button id="read">Calculate</button>
 			</div>
