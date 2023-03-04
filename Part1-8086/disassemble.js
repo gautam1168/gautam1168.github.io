@@ -438,6 +438,7 @@ const MachineInstructionDecodingGuide = [
 ];
 
 function decompileUsingTable(bytes) {
+	let lines = [];
 	let cursor = 0;
 	while (cursor < bytes.length) {
 		const byteFromBin = bytes[cursor++];
@@ -451,23 +452,36 @@ function decompileUsingTable(bytes) {
 		if (secondByteDecode) {
 			const secondByte = bytes[cursor++];
 			if (Array.isArray(secondByteDecode)) {
-				const target = secondByteDecode[0];
-				const regNameMap = secondByteDecode[1];
-				const downshift = secondByteDecode[2];
+				for (let i = 0; i < secondByteDecode.length; i += 3) {
+					const target = secondByteDecode[i];
+					const regNameMap = secondByteDecode[i + 1];
+					const downshift = secondByteDecode[i + 2];
 
-				let regCode = 0b0;
-				if (target == 'a' || target == 'b') {
-					regCode = ((secondByte >> downshift) & 0b111).toString(2).padStart(3, '0');	
+					if (target == 'a' || target == 'b') {
+						const regCode = ((secondByte >> downshift) & 0b111).toString(2).padStart(3, '0');	
+						const stringCode = regCode.toString(2);
+						const regName = regNameMap[stringCode]
+						mnemonicTemplate = mnemonicTemplate.replace(`{${target}}`, regName);
+					} else if (target == 'immed8') {
+						const immediateVal = secondByte.toString(16).padStart(2, '0');
+						mnemonicTemplate = mnemonicTemplate.replace('{immed8}', '0x' + immediateVal);
+					} else  if (target == 'datalo') {
+						const lowByte = secondByte; 
+						const hiByte = bytes[cursor++];
+						const wordVal = (hiByte << 8) | lowByte;
+						mnemonicTemplate = mnemonicTemplate.replace('{datahi}{datalo}', 
+							'0x' + wordVal.toString(16).padStart(3, '0'));
+					}
 				}
-				const stringCode = regCode.toString(2);
-				const regName = regNameMap[stringCode]
-				mnemonicTemplate = mnemonicTemplate.replace(`{${target}}`, regName);
 			} else {
 			}
 		}
 		
-		console.log("Mnemonic template: ", mnemonicTemplate);
+		lines.push(mnemonicTemplate);
 	}
+
+	const fulldecodeout = document.querySelector("#fulltabledecode");
+	fulldecodeout.innerHTML = lines.join('<br/>');
 }
 
 function showBinaryContents(bytes) {
@@ -540,12 +554,21 @@ async function disassembleFile() {
 	const bytes = new Uint8Array(buffer);
 	
 	showBinaryContents(bytes);
-	decompile(bytes);
-	showSlottedView(bytes);
+	// decompile(bytes);
+	// showSlottedView(bytes);
 	decompileUsingTable(bytes);
 }
 
 window.onload = function() {
 	let button = document.querySelector("#choosebin");
 	button.addEventListener("click", disassembleFile);
+
+	fetch("test")
+		.then(res => res.blob())
+		.then(res => res.arrayBuffer())
+		.then(res => {
+			const bytes = new Uint8Array(res);
+			showBinaryContents(bytes);
+			decompileUsingTable(bytes);
+		});
 }
