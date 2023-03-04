@@ -190,10 +190,10 @@ function calculate(coordinates) {
 	let coordIndex = totalCoordinates;
 
 	for (let i = 0; i < coordinates.length; i += 4) {
-		const lat1 = coordinates[i];
-		const lon1 = coordinates[i + 1];
-		const lat2 = coordinates[i + 2];
-		const lon2 = coordinates[i + 3];
+		let lat1 = coordinates[i];
+		let lon1 = coordinates[i + 1];
+		let lat2 = coordinates[i + 2];
+		let lon2 = coordinates[i + 3];
 		const R = 6372.8;
 
 		const dLat = radians(lat2 - lat1);
