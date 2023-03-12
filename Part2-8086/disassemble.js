@@ -40,14 +40,46 @@ async function loadDecodeTable() {
 function decompile(bytes) {
 	let byteIndex = 0;
 	let result = [];
+	const EightBitCaster = new Int8Array(1);
+	const SixteenBitCaster = new Int16Array(1);
 	while (byteIndex < bytes.length) {
 		const firstByte = bytes[byteIndex++];
-		if (window.translationKey[firstByte]) {
-			result.push(window.translationKey[firstByte]);
+		let translation = window.translationKey[firstByte];
+		if (translation) {
+			const code = translation.split(";");
+			let interimCode = code[0];
+			const numBytesToRead = parseInt(code[1]);
+			if (numBytesToRead == 1) {
+				const value = bytes[byteIndex++];
+				EightBitCaster[0] = value;
+				interimCode = interimCode.replace("{bytes}", EightBitCaster[0]);
+			} else if (numBytesToRead == 2) {
+				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
+				SixteenBitCaster[0] = value;
+				interimCode = interimCode.replace("{bytes}", SixteenBitCaster[0]);
+				byteIndex += 2;
+			}
+			result.push(interimCode);
 		} else {
 			const secondByte = bytes[byteIndex++];
 			const bigIndex = (firstByte << 8) | secondByte;
-			result.push(window.translationKey[bigIndex]);
+			if (!window.translationKey[bigIndex]) {
+				throw new Error("Translation not found for ", bigIndex, bigIndex.toString(2).padStart(16, '0'));
+			}
+			translation = window.translationKey[bigIndex].split(";");
+			let interimTran = translation[0];
+			const numBytesToRead = parseInt(translation[1]);
+			if (numBytesToRead == 1) {
+				const value = bytes[byteIndex++];
+				EightBitCaster[0] = value;
+				interimTran = interimTran.replace("{bytes}", EightBitCaster[0]);
+			} else if (numBytesToRead == 2) {
+				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
+				SixteenBitCaster[0] = value;
+				interimTran = interimTran.replace("{bytes}", SixteenBitCaster[0]);
+				byteIndex += 2;
+			}
+			result.push(interimTran);
 		}
 	}
 	return result;
