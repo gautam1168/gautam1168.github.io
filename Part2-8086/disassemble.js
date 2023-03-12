@@ -24,7 +24,7 @@ window.onload = function() {
 	let button = document.querySelector("#choosebin");
 	button.addEventListener("click", showFileBinary);
 
-	fetch("test")
+	fetch("listing_0039_more_movs")
 		.then(res => res.blob())
 		.then(res => res.arrayBuffer())
 		.then(res => {

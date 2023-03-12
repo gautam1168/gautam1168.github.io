@@ -1,0 +1,105 @@
+// op     d w     mod reg rm
+// 100010 0 0     00  000 000
+0x8800, 2, MOV [BX + SI], AL
+// 100010 0 0     00  000 001
+0x8801, 2, MOV [BX + DI], AL
+// 100010 0 0     00  000 010
+0x8802, 2, MOV [BP + SI], AL
+// 100010 0 0     00  000 011
+0x8803, 2, MOV [BP + DI], AL
+// 100010 0 0     00  000 100
+0x8804, 2, MOV [SI], AL
+// 100010 0 0     00  000 101
+0x8805, 2, MOV [DI], AL
+// 100010 0 0     00  000 110
+0x8806, 4, MOV [{direct_address}], AL
+// 100010 0 0     00  000 111
+0x8807, 2, MOV [BX], AL
+
+// 100010 0 0     00  001 000
+0x8800, 2, MOV [BX + SI], CL
+// 100010 0 0     00  001 001
+0x8801, 2, MOV [BX + DI], CL
+// 100010 0 0     00  001 010
+0x8802, 2, MOV [BP + SI], CL
+// 100010 0 0     00  001 011
+0x8803, 2, MOV [BP + DI], CL
+// 100010 0 0     00  001 100
+0x8804, 2, MOV [SI], CL
+// 100010 0 0     00  001 101
+0x8805, 2, MOV [DI], CL
+// 100010 0 0     00  001 110
+0x8806, 4, MOV [{direct_address}], CL
+// 100010 0 0     00  001 111
+0x8807, 2, MOV [BX], CL
+
+// 100010 0 0     00  010 000
+0x8800, 2, MOV [BX + SI], DL
+// 100010 0 0     00  010 001
+0x8801, 2, MOV [BX + DI], DL
+// 100010 0 0     00  010 010
+0x8802, 2, MOV [BP + SI], DL
+// 100010 0 0     00  010 011
+0x8803, 2, MOV [BP + DI], DL
+// 100010 0 0     00  010 100
+0x8804, 2, MOV [SI], DL
+// 100010 0 0     00  010 101
+0x8805, 2, MOV [DI], DL
+// 100010 0 0     00  010 110
+0x8806, 4, MOV [{direct_address}], DL
+// 100010 0 0     00  010 111
+0x8807, 2, MOV [BX], DL
+
+// 100010 0 0     00  011 000
+0x8800, 2, MOV [BX + SI], BL
+// 100010 0 0     00  011 001
+0x8801, 2, MOV [BX + DI], BL
+// 100010 0 0     00  011 010
+0x8802, 2, MOV [BP + SI], BL
+// 100010 0 0     00  011 011
+0x8803, 2, MOV [BP + DI], BL
+// 100010 0 0     00  011 100
+0x8804, 2, MOV [SI], BL
+// 100010 0 0     00  011 101
+0x8805, 2, MOV [DI], BL
+// 100010 0 0     00  011 110
+0x8806, 4, MOV [{direct_address}], BL
+// 100010 0 0     00  011 111
+0x8807, 2, MOV [BX], BL
+
+// 100010 0 0     00  100 000
+0x8800, 2, MOV [BX + SI], AH
+// 100010 0 0     00  101 000
+0x8800, 2, MOV [BX + SI], CH
+// 100010 0 0     00  110 000
+0x8800, 2, MOV [BX + SI], DH
+// 100010 0 0     00  111 000
+0x8800, 2, MOV [BX + SI], BH
+
+0x8900, 2, MOV [BX + SI], AX
+0x8901, 2, MOV [BX + DI], AX
+0x8902, 2, MOV [BP + SI], AX
+0x8903, 2, MOV [BP + DI], AX
+0x8904, 2, MOV [SI], AX
+0x8905, 2, MOV [DI], AX
+0x8906, 4, MOV [{direct_address}], AX
+0x8907, 2, MOV [BX], AX
+
+0x8a00, 2, MOV AL, [BX + SI]
+0x8a01, 2, MOV AL, [BX + DI]
+0x8a02, 2, MOV AL, [BP + SI]
+0x8a03, 2, MOV AL, [BP + DI]
+0x8a04, 2, MOV AL, [SI]
+0x8a05, 2, MOV AL, [DI]
+0x8a06, 4, MOV AL, [{direct_address}]
+0x8a07, 2, MOV AL, [BX]
+
+0x8b00, 2, MOV AX, [BX + SI]
+0x8b01, 2, MOV AX, [BX + DI]
+0x8b02, 2, MOV AX, [BP + SI]
+0x8b03, 2, MOV AX, [BP + DI]
+0x8b04, 2, MOV AX, [SI]
+0x8b05, 2, MOV AX, [DI]
+0x8b06, 4, MOV AX, [{direct_address}]
+0x8b07, 2, MOV AX, [BX]
+
