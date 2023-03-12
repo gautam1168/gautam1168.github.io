@@ -89,7 +89,7 @@ window.onload = async function() {
 	let button = document.querySelector("#choosebin");
 	button.addEventListener("click", showFileBinary);
 
-	loadDecodeTable();	
+	await loadDecodeTable();	
 
 	fetch("listing_0039_more_movs")
 		.then(res => res.blob())
