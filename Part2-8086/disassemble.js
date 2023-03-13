@@ -48,36 +48,40 @@ function decompile(bytes) {
 		if (translation) {
 			const code = translation.split(";");
 			let interimCode = code[0];
-			const numBytesToRead = parseInt(code[1]);
-			if (numBytesToRead == 1) {
-				const value = bytes[byteIndex++];
-				EightBitCaster[0] = value;
-				interimCode = interimCode.replace("{bytes}", EightBitCaster[0]);
-			} else if (numBytesToRead == 2) {
-				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
-				SixteenBitCaster[0] = value;
-				interimCode = interimCode.replace("{bytes}", SixteenBitCaster[0]);
-				byteIndex += 2;
+			const numBytesToReadArray = code[1].split(",").map(it => parseInt(it));
+			for (let numBytesToRead of numBytesToReadArray) {
+				if (numBytesToRead == 1) {
+					const value = bytes[byteIndex++];
+					EightBitCaster[0] = value;
+					interimCode = interimCode.replace("{bytes}", EightBitCaster[0]);
+				} else if (numBytesToRead == 2) {
+					const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
+					SixteenBitCaster[0] = value;
+					interimCode = interimCode.replace("{bytes}", SixteenBitCaster[0]);
+					byteIndex += 2;
+				}
 			}
 			result.push(interimCode);
 		} else {
 			const secondByte = bytes[byteIndex++];
 			const bigIndex = (firstByte << 8) | secondByte;
 			if (!window.translationKey[bigIndex]) {
-				throw new Error("Translation not found for ", bigIndex, bigIndex.toString(2).padStart(16, '0'));
+				throw new Error("Translation not found for " + bigIndex + " , " + bigIndex.toString(2).padStart(16, '0'));
 			}
 			translation = window.translationKey[bigIndex].split(";");
 			let interimTran = translation[0];
-			const numBytesToRead = parseInt(translation[1]);
-			if (numBytesToRead == 1) {
-				const value = bytes[byteIndex++];
-				EightBitCaster[0] = value;
-				interimTran = interimTran.replace("{bytes}", EightBitCaster[0]);
-			} else if (numBytesToRead == 2) {
-				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
-				SixteenBitCaster[0] = value;
-				interimTran = interimTran.replace("{bytes}", SixteenBitCaster[0]);
-				byteIndex += 2;
+			const numBytesToReadArray = translation[1].split(",").map(it => parseInt(it));
+			for (let numBytesToRead of numBytesToReadArray) {
+				if (numBytesToRead == 1) {
+					const value = bytes[byteIndex++];
+					EightBitCaster[0] = value;
+					interimTran = interimTran.replace("{bytes}", EightBitCaster[0]);
+				} else if (numBytesToRead == 2) {
+					const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
+					SixteenBitCaster[0] = value;
+					interimTran = interimTran.replace("{bytes}", SixteenBitCaster[0]);
+					byteIndex += 2;
+				}
 			}
 			result.push(interimTran);
 		}

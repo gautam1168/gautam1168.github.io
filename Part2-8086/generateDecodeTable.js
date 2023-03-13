@@ -11,9 +11,36 @@ const regName = [
 // EffAddress[mod][rm]
 // EffAddress[11][w][rm]
 const EffAddress = [
-	["[BX+SI]", "[BX+DI]", "[BP+SI]", "[BP+DI]", "[SI]", "[DI]", "[{bytes}]", "[BX]"],
-	["[BX+SI+{bytes}]", "[BX+DI+{bytes}]", "[BP+SI+{bytes}]", "[BP+DI+D8]", "[SI+{bytes}]", "[DI+{bytes}]", "[BP+{bytes}]", "[BX+{bytes}]"],
-	["[BX+SI+{bytes}]", "[BX+DI+{bytes}]", "[BP+SI+{bytes}]", "[BP+DI+{bytes}]", "[SI+{bytes}]", "[DI+{bytes}]", "[BP+{bytes}]", "[BX+{bytes}]"],
+	[
+		"[BX+SI]", 
+		"[BX+DI]", 
+		"[BP+SI]", 
+		"[BP+DI]", 
+		"[SI]", 
+		"[DI]", 
+		"[{bytes}]", 
+		"[BX]"
+	],
+	[
+		"[BX+SI+{bytes}]", 
+		"[BX+DI+{bytes}]", 
+		"[BP+SI+{bytes}]", 
+		"[BP+DI+{bytes}]", 
+		"[SI+{bytes}]", 
+		"[DI+{bytes}]", 
+		"[BP+{bytes}]", 
+		"[BX+{bytes}]"
+	],
+	[
+		"[BX+SI+{bytes}]", 
+		"[BX+DI+{bytes}]", 
+		"[BP+SI+{bytes}]", 
+		"[BP+DI+{bytes}]", 
+		"[SI+{bytes}]", 
+		"[DI+{bytes}]", 
+		"[BP+{bytes}]", 
+		"[BX+{bytes}]"
+	],
 	[["AL", "CL", "DL", "BL", "AH", "CH", "DH", "BH"],
 	["AX", "CX", "DX", "BX", "SP", "BP", "SI", "DI"]]
 ];
@@ -61,7 +88,7 @@ function getAssemblyTemplate(OpcodeIndex) {
 			result += " ;1";
 		} else if (mod == 2) {
 			result += " ;2";
-		} else if (mod == 0 && rm == 110) {
+		} else if (mod == 0 && rm == 0b110) {
 			result += " ;1";
 		} else {
 			result += " ;0";
@@ -86,7 +113,7 @@ function getAssemblyTemplate(OpcodeIndex) {
 			result += " ;1";
 		} else if (mod == 2) {
 			result += " ;2";
-		} else if (mod == 0 && rm == 110) {
+		} else if (mod == 0 && rm == 0b110) {
 			result += " ;2";
 		} else {
 			result += " ;0";
@@ -111,7 +138,7 @@ function getAssemblyTemplate(OpcodeIndex) {
 			result += " ;1";
 		} else if (mod == 2) {
 			result += " ;2";
-		}  else if (mod == 0 && rm == 110) {
+		}  else if (mod == 0 && rm == 0b110) {
 			result += " ;1";
 		} else {
 			result += " ;0";
@@ -136,7 +163,7 @@ function getAssemblyTemplate(OpcodeIndex) {
 			result += " ;1";
 		} else if (mod == 2) {
 			result += " ;2";
-		}  else if (mod == 0 && rm == 110) {
+		}  else if (mod == 0 && rm == 0b110) {
 			result += " ;2";
 		} else {
 			result += " ;0";
@@ -150,14 +177,27 @@ function getAssemblyTemplate(OpcodeIndex) {
 		const mod = (SecondByte >> 6);
 		const reg = (SecondByte & 0b111000) >> 3;
 		const rm = (SecondByte & 0b111);
+		let result;
 		if (reg == 0) {
 			if (mod == 3) {
-				return "MOV " + 
-					" " + EffAddress[mod][w][rm] + ", {bytes} ;1";
+				result = "MOV " + 
+					" " + EffAddress[mod][w][rm] + ", {bytes}";
 			} else {
-				return "MOV " + 
-					" " + EffAddress[mod][rm] + ", {bytes} ;1";
+				result = "MOV " + 
+					" " + EffAddress[mod][rm] + ", {bytes}";
 			}
+
+			if (mod == 1) {
+				result += " ;1,1";
+			} else if (mod == 2) {
+				result += " ;2,1";
+			}  else if (mod == 0 && rm == 0b110) {
+				result += " ;2,1";
+			} else {
+				result += " ;1";
+			}
+
+			return result;
 		}
 	} else if (FirstByte == 0b11000111) {
 		const w = 1;
@@ -165,13 +205,25 @@ function getAssemblyTemplate(OpcodeIndex) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		const rm = (SecondByte & 0b111);
 		if (reg == 0) {
+			let result;
 			if (mod == 3) {
-				return "MOV " + 
-					" " + EffAddress[mod][w][rm] + ", {bytes} ;2";
+				result = "MOV " + 
+					" " + EffAddress[mod][w][rm] + ", {bytes}";
 			} else {
-				return "MOV " + 
-					" " + EffAddress[mod][rm] + ", {bytes} ;2";
+				result = "MOV " + 
+					" " + EffAddress[mod][rm] + ", {bytes}";
 			}
+
+			if (mod == 1) {
+				result += " ;1,2";
+			} else if (mod == 2) {
+				result += " ;2,2";
+			}  else if (mod == 0 && rm == 0b110) {
+				result += " ;2,2";
+			} else {
+				result += " ;2";
+			}
+			return result;
 		}
 	}
 	// Immediate to register
@@ -244,16 +296,16 @@ function getAssemblyTemplate(OpcodeIndex) {
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
 	else if (FirstByte == 0 && SecondByte == 0b10100000) {
-		return "MOV AL, {addr} ;2";
-	} else if (FirstByte == 0 && SecondByte == 0b10100011) {
-		return "MOV AX, {addr} ;2";
+		return "MOV AL, [{bytes}] ;2";
+	} else if (FirstByte == 0 && SecondByte == 0b10100001) {
+		return "MOV AX, [{bytes}] ;2";
 	}
 	// Accumulator to memory
 	// 1010001,w  addr-lo   addr-hi
 	else if (FirstByte == 0 && SecondByte == 0b10100010) {
-		return "MOV {addr}, AL ;2";
+		return "MOV [{bytes}], AL ;2";
 	} else if (FirstByte == 0 && SecondByte == 0b10100011) {
-		return "MOV {addr}, AX ;2";
+		return "MOV [{bytes}], AX ;2";
 	}
 	// Register/memory to segment register
 	// 10001110 	mod,0,SR,r/m 	 disp-lo		disp-hi
