@@ -61,7 +61,7 @@ function decompile(bytes) {
 					byteIndex += 2;
 				}
 			}
-			result.push(interimCode);
+			result.push(interimCode.replace(/\+\-/g, "-"));
 		} else {
 			const secondByte = bytes[byteIndex++];
 			const bigIndex = (firstByte << 8) | secondByte;
@@ -83,7 +83,7 @@ function decompile(bytes) {
 					byteIndex += 2;
 				}
 			}
-			result.push(interimTran);
+			result.push(interimTran.replace(/\+\-/g, "-"));
 		}
 	}
 	return result;
