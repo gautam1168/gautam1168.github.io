@@ -101,7 +101,7 @@ function registerMemoryToFromRegister(OpName, FirstByte, SecondByte) {
 	return result;
 }
 
-function immediateToRegisterMemory(OpName, FirstByte, SecondByte) {
+function immediateToRegisterMemoryMov(OpName, FirstByte, SecondByte) {
 	const w = FirstByte & 0b1;
 	const mod = (SecondByte >> 6);
 	const reg = (SecondByte & 0b111000) >> 3;
@@ -130,6 +130,35 @@ function immediateToRegisterMemory(OpName, FirstByte, SecondByte) {
 	}
 }
 
+function immediateToRegisterMemoryArith(OpName, FirstByte, SecondByte) {
+	const s = (FirstByte & 0b10) >> 1;
+	const w = FirstByte & 0b1;
+	const sw = s + '' + w;
+	const mod = (SecondByte >> 6);
+	const reg = (SecondByte & 0b111000) >> 3;
+	const rm = (SecondByte & 0b111);
+	let result;
+	if (mod == 3) {
+		result = OpName + 
+			" " + EffAddress[mod][w][rm] + ", {bytes}";
+	} else {
+		result = OpName + 
+			" " + EffAddress[mod][rm] + ", {bytes}";
+	}
+
+	if (mod == 1) {
+		result += " ;1," + (sw == '01' ? 2 : 1);
+	} else if (mod == 2) {
+		result += " ;2," + (sw == '01' ? 2 : 1);
+	}  else if (mod == 0 && rm == 0b110) {
+		result += " ;2," + (sw == '01' ? 2 : 1);
+	} else {
+		result += " ;" + (sw == '01' ? 2 : 1);
+	}
+
+	return result;
+}
+
 function immediateToRegister(OpName, FirstByte, SecondByte) {
 	const w = (SecondByte & 0b00001000) >> 3;
 	const reg = SecondByte & 0b111;
@@ -146,6 +175,11 @@ function memoryToAccumulator(OpName, FirstByte, SecondByte) {
 	return `${OpName} ${ w == 0 ? 'AL' : 'AX' }, [{bytes}] ;2`;
 }
 
+function immediateToAccumulatorAdd(OpName, FirstByte, SecondByte) {
+	const w = (SecondByte & 0b1);
+	return `${OpName} ${ w == 0 ? 'AL' : 'AX' }, {bytes} ;${w == 0 ? 1 : 2}`
+}
+
 function getAssemblyTemplate(OpcodeIndex) {
 	const FirstByte = OpcodeIndex >> 8;
 	const FirstSixBits = FirstByte >> 2;
@@ -153,18 +187,12 @@ function getAssemblyTemplate(OpcodeIndex) {
 	const SecondByte = (OpcodeIndex & 0b11111111);
 	const SecondNibble = SecondByte >> 4;
 	const SecondSevenBits = SecondByte >> 1;
-	// Register/Memory to/from register
-	// 100010,d,w		mod,reg,r/m 	disp-lo 	disp-hi
-	if (FirstSixBits == 0b100010) {
-		return registerMemoryToFromRegister("MOV", FirstByte, SecondByte);
-	} 
-	// Immediate to register/memory
-	// 1100011,w 	mod,000,r/m 	data  data if w=1
-	else if (FirstSevenBits == 0b1100011) {
-		const reg = (SecondByte & 0b111000) >> 3;
-		if (reg == 0) {
-			return immediateToRegisterMemory("MOV", FirstByte, SecondByte);
-		}
+
+	 
+	// Memory to accumulator
+	// 1010000,w 	addr-lo		addr-hi
+	if (FirstByte == 0 && SecondSevenBits == 0b1010000) {
+		return memoryToAccumulator("MOV", FirstByte, SecondByte);
 	} 
 	// Immediate to register
 	// 1011,w,reg 	data		data-1 if w=1
@@ -175,17 +203,20 @@ function getAssemblyTemplate(OpcodeIndex) {
 		const reg = 0b000;
 		return "MOV " + regName[w][reg] + ", " + (w == 0 ? "{bytes} ;1" : "{bytes} ;2");
 		*/
-	} 
-	// Memory to accumulator
-	// 1010000,w 	addr-lo		addr-hi
-	else if (FirstByte == 0 && SecondSevenBits == 0b1010000) {
-		return memoryToAccumulator("MOV", FirstByte, SecondByte);
-	} 
+	}
 	// Accumulator to memory
 	// 1010001,w  addr-lo   addr-hi
 	else if (FirstByte == 0 && SecondSevenBits == 0b1010001) {
 		return accumulatorToMemory("MOV", FirstByte, SecondByte)
 	} 
+	// Immediate to register/memory
+	// 1100011,w 	mod,000,r/m disp-lo disp-hi	data  data if w=1
+	else if (FirstSevenBits == 0b1100011) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0) {
+			return immediateToRegisterMemoryMov("MOV", FirstByte, SecondByte);
+		}
+	}
 	// Register/memory to segment register
 	// 10001110 	mod,0,SR,r/m 	 disp-lo		disp-hi
 	else if (FirstByte == 0b10001110 && ((SecondByte & 0b100000) >> 5) == 0) {
@@ -193,7 +224,49 @@ function getAssemblyTemplate(OpcodeIndex) {
 	} 
 	else if (FirstByte == 0b10001100 && ((SecondByte & 0b100000) >> 5) == 0) {
 		return "NOT IMPLEMENTED";
+	} 
+	// Register/Memory to/from register
+	// 100010,d,w		mod,reg,r/m 	disp-lo 	disp-hi
+	else if (FirstSixBits == 0b100010) {
+		return registerMemoryToFromRegister("MOV", FirstByte, SecondByte);
+	} 
+	// Add register to from memory
+	// 100000,s,w  	mod,reg,rm 	disp-lo   disp-hi 	data 	dataifw=1
+	else if (FirstSixBits == 0b100000) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0) {
+			return immediateToRegisterMemoryArith("ADD", FirstByte, SecondByte);	
+		} else if (reg == 0b101) {
+			return immediateToRegisterMemoryArith("SUB", FirstByte, SecondByte);
+		} else if (reg == 0b111) {
+			return immediateToRegisterMemoryArith("CMP", FirstByte, SecondByte);
+		}
 	}
+	// Add immediate to accumulator
+	// 0000010,w 	data 	dataifw=1 
+	else if (FirstByte == 0 && SecondSevenBits == 0b10) {
+		return immediateToAccumulatorAdd("ADD", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0010110) {
+		return immediateToAccumulatorAdd("SUB", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0011110) {
+		return immediateToAccumulatorAdd("CMP", FirstByte, SecondByte);
+	}
+
+
+	// 001110,d,w  	mod,reg,rm	disp-lo		disp-hi
+	else if (FirstSixBits == 0b001110) {
+		return registerMemoryToFromRegister("CMP", FirstByte, SecondByte);
+	}
+	// 001010,d,w 	mod,reg,rm 	disp-lo 	disp-hi
+	else if (FirstSixBits == 0b001010) {
+		return registerMemoryToFromRegister("SUB", FirstByte, SecondByte);
+	}
+	// Add  
+	// 000000,d,w 	mod,reg,rm 	disp-lo 	disp-hi
+	else if (FirstSixBits == 0) {
+		return registerMemoryToFromRegister("ADD", FirstByte, SecondByte);
+	}
+	
 	return "";
 }
 
