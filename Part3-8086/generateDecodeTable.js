@@ -189,9 +189,50 @@ function getAssemblyTemplate(OpcodeIndex) {
 	const SecondSevenBits = SecondByte >> 1;
 
 	 
+	if (FirstByte == 0 && SecondByte == 0b01110101) {
+		return `JNE {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01110100) {
+		return `JE {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111100) {
+		return `JL {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111110) {
+		return `JLE {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01110010) {
+		return `JB {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01110110) {
+		return `JBE {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111010) {
+		return `JP {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01110000) {
+		return `JO {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111000) {
+		return `JS {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111101) {
+		return `JNL {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111111) {
+		return `JG {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01110011) {
+		return `JNB {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01110111) {
+		return `JA {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111011) {
+		return `JNP {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01110001) {
+		return `JNO {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b01111001) {
+		return `JNS {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b11100010) {
+		return `LOOP {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b11100001) {
+		return `LOOPZ {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b11100000) {
+		return `LOOPNZ {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b11100011) {
+		return `JCXZ {bytes} ;1`;
+	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
-	if (FirstByte == 0 && SecondSevenBits == 0b1010000) {
+	else if (FirstByte == 0 && SecondSevenBits == 0b1010000) {
 		return memoryToAccumulator("MOV", FirstByte, SecondByte);
 	} 
 	// Immediate to register

@@ -51,11 +51,13 @@ function decompile(bytes) {
 		let translation;
 		if (translation = window.translationKey[bigIndex]) {
 			byteIndex += 2;
+			/*
 			interimCode += firstByte.toString(2).padStart(8, '0') + " " + 
 				secondByte.toString(2).padStart(8, '0');
+			*/
 		} else if (translation = window.translationKey[firstByte]) {
 			byteIndex += 1;
-			interimCode += firstByte.toString(2).padStart(8, '0') + " ";
+			// interimCode += firstByte.toString(2).padStart(8, '0') + " ";
 		} else {
 			console.log(result);
 			throw new Error("Cannot translate " + 
@@ -68,22 +70,21 @@ function decompile(bytes) {
 		for (let numBytesToRead of numBytesToReadArray) {
 			if (numBytesToRead == 1) {
 				const value = bytes[byteIndex++];
-				interimCode += " " + value.toString(2).padStart(8, '0');
+				// interimCode += " " + value.toString(2).padStart(8, '0');
 				EightBitCaster[0] = value;
-				interimCode += " " + code[0];
-				interimCode = interimCode.replace("{bytes}", EightBitCaster[0]);
+				code[0] = code[0].replace("{bytes}", EightBitCaster[0]);
 			} else if (numBytesToRead == 2) {
 				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
+				/*
 				interimCode += " " + bytes[byteIndex].toString(2).padStart(8, '0') +
 					" " + bytes[byteIndex + 1].toString(2).padStart(8, '0');
+				*/
 				SixteenBitCaster[0] = value;
-				interimCode += " " + code[0];
-				interimCode = interimCode.replace("{bytes}", SixteenBitCaster[0]);
+				code[0] = code[0].replace("{bytes}", SixteenBitCaster[0]);
 				byteIndex += 2;
-			} else {
-				interimCode += " " + code[0];
-			}
+			} 
 		}
+		interimCode += " " + code[0];
 		result.push(interimCode.replace(/\+\-/g, "-"));
 	}
 	return result;
