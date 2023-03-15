@@ -56,8 +56,6 @@ fs.open("decodetable.txt", "w", (err, fd) => {
 		return;
 	}
 	
-	debugger
-	const testresult = getAssemblyTemplate(0b0000000001111010);
 
 	for (let OpcodeIndex = 0; OpcodeIndex < 65536; ++OpcodeIndex) {
 		
@@ -97,7 +95,7 @@ fs.open("decodetable2byte.txt", "w", (err, fd) => {
 	}
 
 	debugger
-	getAssemblyTemplate2Byte(0b1111111101000111);
+	getAssemblyTemplate2Byte(0b1000010111001011);
 	
 	for (let OpcodeIndex = 0; OpcodeIndex <= 65536; ++OpcodeIndex) {
 		
@@ -561,6 +559,18 @@ function getAssemblyTemplate2Byte(OpcodeIndex) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		if (reg == 0) {
 			return immediateToRegisterMemoryMov("TEST", FirstByte, SecondByte);
+		} else if (reg == 0b011) {
+			return incVariant("NEG", FirstByte, SecondByte);
+		} else if (reg == 0b100) {
+			return incVariant("MUL", FirstByte, SecondByte);
+		} else if (reg == 0b101) {
+			return incVariant("IMUL", FirstByte, SecondByte);
+		} else if (reg == 0b110) {
+			return incVariant("DIV", FirstByte, SecondByte);
+		} else if (reg == 0b111) {
+			return incVariant("IDIV", FirstByte, SecondByte);
+		} else if (reg == 0b010) {
+			return incVariant("NOT", FirstByte, SecondByte);
 		}
 	} else if (FirstSevenBits == 0b0011010) {
 		const reg = (SecondByte & 0b111000) >> 3;
@@ -599,22 +609,6 @@ function getAssemblyTemplate2Byte(OpcodeIndex) {
 			return incVariant("JMP", FirstByte, SecondByte);
 		} else if (FirstByte == 0b11111111 && reg == 0b101) {
 			return incVariant("JMP", FirstByte, SecondByte);
-		}
-	}
-	else if (FirstSevenBits == 0b1111011) {
-		const reg = (SecondByte & 0b111000) >> 3;
-		if (reg == 0b011) {
-			return incVariant("NEG", FirstByte, SecondByte);
-		} else if (reg == 0b100) {
-			return incVariant("MUL", FirstByte, SecondByte);
-		} else if (reg == 0b101) {
-			return incVariant("IMUL", FirstByte, SecondByte);
-		} else if (reg == 0b110) {
-			return incVariant("DIV", FirstByte, SecondByte);
-		} else if (reg == 0b111) {
-			return incVariant("IDIV", FirstByte, SecondByte);
-		} else if (reg == 0b010) {
-			return incVariant("NOT", FirstByte, SecondByte);
 		}
 	}
 	// Register/Memory to/from register
@@ -697,8 +691,10 @@ function getAssemblyTemplate2Byte(OpcodeIndex) {
 	else if (FirstSixBits == 0b001000) {
 		return registerMemoryToFromRegister("AND", FirstByte, SecondByte);
 	}
+	// Looks like  this is also wrong in the manual
 	// 000100,d,w 	mod,reg,rm 	disp-lo 	disp-hi
-	else if (FirstSixBits == 0b000100) {
+	// 100001,d,w
+	else if (FirstSixBits == 0b100001) {
 		return registerMemoryToFromRegister("TEST", FirstByte, SecondByte);
 	}
 	// 000010,d,w 	mod,reg,rm 	disp-lo		disp-hi

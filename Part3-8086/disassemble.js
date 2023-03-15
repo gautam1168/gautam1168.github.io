@@ -65,13 +65,17 @@ function decompile(bytes) {
 		if (translation = window.translationKey1Byte[firstByte]) 
 		{
 			byteIndex += 1;
+			/*
 			interimCode += firstByte.toString(2).padStart(8, '0') + " ";
+			*/
 		}
 		else if (translation = window.translationKey2Byte[bigIndex]) 
 		{
 			byteIndex += 2;
+			/*
 			interimCode += firstByte.toString(2).padStart(8, '0') + " " + 
 				secondByte.toString(2).padStart(8, '0');
+			*/
 		} 
 		else 
 		{
@@ -92,7 +96,9 @@ function decompile(bytes) {
 
 			if (numBytesToRead == 1) {
 				const value = bytes[byteIndex++];
+				/*
 				interimCode += " " + value.toString(2).padStart(8, '0');
+				*/
 				if (!signExtend) {
 					EightBitCaster[0] = value;
 					code[0] = code[0].replace("{bytes}", EightBitCaster[0]);
@@ -102,8 +108,10 @@ function decompile(bytes) {
 				}
 			} else if (numBytesToRead == 2) {
 				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
+				/*
 				interimCode += " " + bytes[byteIndex].toString(2).padStart(8, '0') +
 					" " + bytes[byteIndex + 1].toString(2).padStart(8, '0');
+				*/
 				SixteenBitCaster[0] = value;
 				code[0] = code[0].replace("{bytes}", SixteenBitCaster[0]);
 				byteIndex += 2;
