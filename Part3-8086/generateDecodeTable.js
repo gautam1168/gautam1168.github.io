@@ -377,6 +377,8 @@ function getAssemblyTemplate(OpcodeIndex) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		if (reg == 0) {
 			return incVariant("INC", FirstByte, SecondByte);
+		} else if (reg == 0b001) {
+			return incVariant("DEC", FirstByte, SecondByte);
 		}
 	}
 	// Register/Memory to/from register
@@ -417,6 +419,10 @@ function getAssemblyTemplate(OpcodeIndex) {
 	else if (FirstByte == 0 && ((SecondByte >> 3) == 0b01000)) {
 		const reg = (SecondByte & 0b111);
 		return `INC ${regName[1][reg]} ;0`;
+	}
+	else if (FirstByte == 0 && ((SecondByte >> 3) == 0b01001)) {
+		const reg = (SecondByte & 0b111);
+		return `DEC ${regName[1][reg]} ;0`;
 	}
 	// Add immediate to accumulator
 	// 0000010,w 	data 	dataifw=1 
