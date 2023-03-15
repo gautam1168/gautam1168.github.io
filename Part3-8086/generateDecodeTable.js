@@ -270,6 +270,49 @@ function incVariant(OpName, FirstByte, SecondByte) {
 	return result;
 }
 
+function shlVariant(OpName, FirstByte, SecondByte) {
+	const v = (FirstByte & 0b10) >> 1;
+	const w = (FirstByte & 0b1);
+	const mod = (SecondByte >> 6);
+	const rm = (SecondByte & 0b111);
+
+	let result;
+	const source = v == 0 ? 1 : 'CL';
+	if (mod == 3) {
+		result = `${OpName} ${EffAddress[mod][w][rm]}, ${source}`;
+	} else {
+		result = `${OpName} ${EffAddress[mod][rm]}, ${source}`;
+	}
+
+	if (mod == 1) {
+		result += " ;1";
+	} else if (mod == 2) {
+		result += " ;2";
+	} else if (mod == 0 && rm == 0b110) {
+		result += " ;2";
+	} else {
+		result += " ;0";
+	}
+	return result;
+}
+
+function repInstruction(FirstByte, SecondByte) {
+	const SecondSevenBits = SecondByte >> 1;
+	const w = SecondByte & 0b1;
+
+	if (SecondSevenBits == 0b1010010) {
+		return `REP MOVS${w == 0 ? 'B' : 'W'} ;0`;
+	} else if (SecondSevenBits == 0b1010011) {
+		return `REP CMPS${w == 0 ? 'B' : 'W'} ;0`;
+	} else if (SecondSevenBits == 0b1010111) {
+		return `REP SCAS${w == 0 ? 'B' : 'W'} ;0`;
+	} else if (SecondSevenBits == 0b1010110) {
+		return `REP LODS${w == 0 ? 'B' : 'W'} ;0`;
+	} else if (SecondSevenBits == 0b1010101) {
+		return `REP STOS${w == 0 ? 'B' : 'W'} ;0`;
+	}
+}
+
 function getAssemblyTemplate(OpcodeIndex) {
 	const FirstByte = OpcodeIndex >> 8;
 	const FirstSixBits = FirstByte >> 2;
@@ -337,6 +380,14 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return `AAS ;0`;
 	} else if (FirstByte == 0 && SecondByte == 0b00101111) {
 		return `DAS ;0`;
+	} else if (FirstByte == 0b11010100 && SecondByte == 0b00001010) {
+		return `AAM ;0`;
+	} else if (FirstByte == 0b11010101 && SecondByte == 0b00001010) {
+		return `AAD ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b10011000) {
+		return `CBW ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b10011001) {
+		return `CWD ;0`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
@@ -364,7 +415,27 @@ function getAssemblyTemplate(OpcodeIndex) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		if (reg == 0) {
 			return immediateToRegisterMemoryMov("MOV", FirstByte, SecondByte);
+		} 
+	} else if (FirstSevenBits == 0b1000000) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0b100) {
+			return immediateToRegisterMemoryMov("AND", FirstByte, SecondByte);
+		} else if (reg == 0b001) {
+			return immediateToRegisterMemoryMov("OR", FirstByte, SecondByte);
 		}
+	} else if (FirstSevenBits == 0b1111011) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0) {
+			return immediateToRegisterMemoryMov("TEST", FirstByte, SecondByte);
+		}
+	} else if (FirstSevenBits == 0b0011010) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0b110) {
+			return immediateToRegisterMemoryMov("XOR", FirstByte, SecondByte);
+		}
+	}
+	else if (FirstByte == 0b11110011) {
+		return repInstruction(FirstByte, SecondByte);
 	}
 	// Register/memory to segment register
 	// 10001110 	mod,0,SR,r/m 	 disp-lo		disp-hi
@@ -397,6 +468,8 @@ function getAssemblyTemplate(OpcodeIndex) {
 			return incVariant("DIV", FirstByte, SecondByte);
 		} else if (reg == 0b111) {
 			return incVariant("IDIV", FirstByte, SecondByte);
+		} else if (reg == 0b010) {
+			return incVariant("NOT", FirstByte, SecondByte);
 		}
 	}
 	// Register/Memory to/from register
@@ -429,6 +502,26 @@ function getAssemblyTemplate(OpcodeIndex) {
 			return immediateToRegisterMemoryArith("SBB", FirstByte, SecondByte);
 		}
 	}
+	// shl variant
+	// 110100,v,w 	mod,100,r/m 	disp-lo		disp-hi
+	else if (FirstSixBits == 0b110100) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0b100) {
+			return shlVariant("SHL", FirstByte, SecondByte);
+		} else if (reg == 0b101) {
+			return shlVariant("SHR", FirstByte, SecondByte);
+		} else if (reg == 0b111) {
+			return shlVariant("SAR", FirstByte, SecondByte);
+		} else if (reg == 0) {
+			return shlVariant("ROL", FirstByte, SecondByte);
+		} else if (reg == 0b001) {
+			return shlVariant("ROR", FirstByte, SecondByte);
+		} else if (reg == 0b010) {
+			return shlVariant("RCL", FirstByte, SecondByte);
+		} else if (reg == 0b011) {
+			return shlVariant("RCR", FirstByte, SecondByte);
+		}
+	}
 	// Xchange register with accumulator
 	else if (FirstByte == 0 && ((SecondByte >> 3) == 0b10010)) {
 		const reg = (SecondByte & 0b111);
@@ -454,7 +547,14 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return immediateToAccumulatorAdd("ADC", FirstByte, SecondByte);
 	} else if (FirstByte == 0 && SecondSevenBits == 0b0001110) {
 		return immediateToAccumulatorAdd("SBB", FirstByte, SecondByte);
-	} else if (FirstByte == 0 && SecondSevenBits == 0b0001110) {
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0010010) {
+		return immediateToAccumulatorAdd("AND", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b1010100) {
+		return immediateToAccumulatorAdd("TEST", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0000110) {
+		return immediateToAccumulatorAdd("OR", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0011010) {
+		return immediateToAccumulatorAdd("XOR", FirstByte, SecondByte);
 	} else if (FirstByte == 0 && SecondSevenBits == 0b1110010) {
 		const w = SecondByte & 0b1;
 		return `IN ${w == 0 ? 'AL' : 'AX'}, {bytes} ;-1`;
@@ -497,7 +597,6 @@ function getAssemblyTemplate(OpcodeIndex) {
 			return opToRegisterMemory("POP", FirstByte, SecondByte);
 		}
 	}
-
 	// 001110,d,w  	mod,reg,rm	disp-lo		disp-hi
 	else if (FirstSixBits == 0b001110) {
 		return registerMemoryToFromRegister("CMP", FirstByte, SecondByte);
@@ -513,6 +612,22 @@ function getAssemblyTemplate(OpcodeIndex) {
 	// 000100,d,w 	mod,reg,rm disp-lo		disp-hi
 	else if (FirstSixBits == 0b000100) {
 		return registerMemoryToFromRegister("ADC", FirstByte, SecondByte);
+	}
+	// 001000,d,w 	mod,reg,rm 	disp-lo 	disp-hi
+	else if (FirstSixBits == 0b001000) {
+		return registerMemoryToFromRegister("AND", FirstByte, SecondByte);
+	}
+	// 000100,d,w 	mod,reg,rm 	disp-lo 	disp-hi
+	else if (FirstSixBits == 0b000100) {
+		return registerMemoryToFromRegister("TEST", FirstByte, SecondByte);
+	}
+	// 000010,d,w 	mod,reg,rm 	disp-lo		disp-hi
+	else if (FirstSixBits == 0b000010) {
+		return registerMemoryToFromRegister("OR", FirstByte, SecondByte);
+	}
+	// 001100,d,w 	mod,reg,rm 	disp-lo 	disp-hi
+	else if (FirstSixBits == 0b001100) {
+		return registerMemoryToFromRegister("XOR", FirstByte, SecondByte);
 	}
 	// Add  
 	// 000000,d,w 	mod,reg,rm 	disp-lo 	disp-hi
