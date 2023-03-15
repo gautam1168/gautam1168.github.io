@@ -390,6 +390,30 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return `CWD ;0`;
 	} else if (FirstByte == 0 && SecondByte == 0b11000011) {
 		return `RET ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11001101) {
+		return `INT {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b11001110) {
+		return `INTO ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11001111) { 
+		return `IRET ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11111000) {
+		return `CLC ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11110101) {
+		return `CMC ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11111001) {
+		return `STC ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11111100) {
+		return `CLD ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11111101) {
+		return `STD ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11111010) {
+		return `CLI ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11111011) {
+		return `STI ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11110100) {
+		return `HLT ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b10011011) {
+		return `WAIT ;0`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
