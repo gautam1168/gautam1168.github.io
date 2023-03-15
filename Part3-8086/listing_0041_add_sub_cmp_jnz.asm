@@ -245,3 +245,6 @@ inc byte [bx + si + 5]
 inc word [bp + di - 10044]
 inc word [9349]
 inc byte [bp]
+
+aaa
+daa

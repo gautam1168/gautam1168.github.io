@@ -113,27 +113,26 @@ function immediateToRegisterMemoryMov(OpName, FirstByte, SecondByte) {
 	const reg = (SecondByte & 0b111000) >> 3;
 	const rm = (SecondByte & 0b111);
 	let result;
-	if (reg == 0) {
-		if (mod == 3) {
-			result = OpName + 
-				" " + EffAddress[mod][w][rm] + ", {bytes}";
-		} else {
-			result = OpName + 
-				" " + EffAddress[mod][rm] + ", {bytes}";
-		}
 
-		if (mod == 1) {
-			result += " ;1," + (w == 0 ? 1 : 2);
-		} else if (mod == 2) {
-			result += " ;2," + (w == 0 ? 1 : 2);
-		}  else if (mod == 0 && rm == 0b110) {
-			result += " ;2," + (w == 0 ? 1 : 2);
-		} else {
-			result += " ;" + (w == 0 ? 1 : 2);
-		}
-
-		return result;
+	if (mod == 3) {
+		result = OpName + 
+			" " + EffAddress[mod][w][rm] + ", {bytes}";
+	} else {
+		result = OpName + 
+			" " + EffAddress[mod][rm] + ", {bytes}";
 	}
+
+	if (mod == 1) {
+		result += " ;1," + (w == 0 ? 1 : 2);
+	} else if (mod == 2) {
+		result += " ;2," + (w == 0 ? 1 : 2);
+	}  else if (mod == 0 && rm == 0b110) {
+		result += " ;2," + (w == 0 ? 1 : 2);
+	} else {
+		result += " ;" + (w == 0 ? 1 : 2);
+	}
+
+	return result;
 }
 
 function immediateToRegisterMemoryArith(OpName, FirstByte, SecondByte) {
@@ -247,6 +246,30 @@ function loadVariant(OpName, SecondByte) {
 	return result;
 }
 
+function incVariant(OpName, FirstByte, SecondByte) {
+	const w = FirstByte & 0b1;
+	const mod = (SecondByte >> 6);
+	const rm = (SecondByte & 0b111);
+	
+	let result = "";
+	if (mod == 3) {
+		result = OpName + " " + EffAddress[mod][w][rm];
+	} else {
+		result = OpName + " " + EffAddress[mod][rm];
+	}
+
+	if (mod == 1) {
+		result += " ;1";
+	} else if (mod == 2) {
+		result += " ;2";
+	} else if (mod == 0 && rm == 0b110) {
+		result += " ;2";
+	} else {
+		result += " ;0";
+	}
+	return result;
+}
+
 function getAssemblyTemplate(OpcodeIndex) {
 	const FirstByte = OpcodeIndex >> 8;
 	const FirstSixBits = FirstByte >> 2;
@@ -306,6 +329,10 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return `PUSHF ;0`;
 	} else if (FirstByte == 0 && SecondByte == 0b10011101) {
 		return `POPF ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b00110111) {
+		return `AAA ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b00100111) {
+		return `DAA ;0`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
@@ -346,6 +373,12 @@ function getAssemblyTemplate(OpcodeIndex) {
 	else if (FirstSevenBits == 0b1000011) {
 		return registerMemoryToFromRegister("XCHG", FirstByte, SecondByte);
 	}
+	else if (FirstSevenBits == 0b1111111) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0) {
+			return incVariant("INC", FirstByte, SecondByte);
+		}
+	}
 	// Register/Memory to/from register
 	// 100010,d,w		mod,reg,r/m 	disp-lo 	disp-hi
 	else if (FirstSixBits == 0b100010) {
@@ -378,6 +411,10 @@ function getAssemblyTemplate(OpcodeIndex) {
 	else if (FirstByte == 0 && ((SecondByte >> 3) == 0b10010)) {
 		const reg = (SecondByte & 0b111);
 		return `XCHG AX, ${regName[1][reg]} ;0`;
+	}
+	else if (FirstByte == 0 && ((SecondByte >> 3) == 0b01000)) {
+		const reg = (SecondByte & 0b111);
+		return `INC ${regName[1][reg]} ;0`;
 	}
 	// Add immediate to accumulator
 	// 0000010,w 	data 	dataifw=1 
