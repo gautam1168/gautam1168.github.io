@@ -222,16 +222,16 @@ function opToSegment(OpName, FirstByte) {
 	return `${OpName} ${segRegName[reg]} ;0`;
 }
 
-function loadEaToRegister(SecondByte) {
+function loadVariant(OpName, SecondByte) {
 	const mod = (SecondByte >> 6);
 	const reg = (SecondByte & 0b111000) >> 3;
 	const rm = (SecondByte & 0b111);
 	let result = "";
 	if (mod == 3) {
-		result = "LEA" + 
+		result = OpName + 
 			" " + regName[1][reg] + ", " + EffAddress[mod][1][rm];
 	} else {
-		result = "LEA" + 
+		result = OpName + 
 			" " + regName[1][reg] + ", " + EffAddress[mod][rm];
 	}
 
@@ -298,6 +298,14 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return `JCXZ {bytes} ;1`;
 	} else if (FirstByte == 0 && SecondByte == 0b11010111) {
 		return `XLAT ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b10011111) {
+		return `LAHF ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b10011110) {
+		return `LAHF ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b10011100) {
+		return `PUSHF ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b10011101) {
+		return `POPF ;0`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
@@ -346,7 +354,11 @@ function getAssemblyTemplate(OpcodeIndex) {
 	// load ea to register
 	// 10001101 	mod,reg,r/m 	disp-lo 	disp-hi
 	else if (FirstByte == 0b10001101) {
-		return loadEaToRegister(SecondByte);
+		return loadVariant("LEA", SecondByte);
+	} else if (FirstByte == 0b11000101) {
+		return loadVariant("LDS", SecondByte);
+	} else if (FirstByte == 0b11000100) {
+		return loadVariant("LES", SecondByte);
 	}
 	// Add register to from memory
 	// 100000,s,w  	mod,reg,rm 	disp-lo   disp-hi 	data 	dataifw=1
