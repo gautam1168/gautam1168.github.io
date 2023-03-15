@@ -66,11 +66,22 @@ function decompile(bytes) {
 		const code = translation.split(";");
 		const numBytesToReadArray = code[1].split(",").map(it => parseInt(it));
 		for (let numBytesToRead of numBytesToReadArray) {
+			let signExtend = false;
+			if (numBytesToRead == -1) {
+				signExtend = true;
+				numBytesToRead = 1;
+			}
+
 			if (numBytesToRead == 1) {
 				const value = bytes[byteIndex++];
 				interimCode += " " + value.toString(2).padStart(8, '0');
-				EightBitCaster[0] = value;
-				code[0] = code[0].replace("{bytes}", EightBitCaster[0]);
+				if (!signExtend) {
+					EightBitCaster[0] = value;
+					code[0] = code[0].replace("{bytes}", EightBitCaster[0]);
+				} else {
+					SixteenBitCaster[0] = value;
+					code[0] = code[0].replace("{bytes}", SixteenBitCaster[0]);
+				}
 			} else if (numBytesToRead == 2) {
 				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
 				interimCode += " " + bytes[byteIndex].toString(2).padStart(8, '0') +

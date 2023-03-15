@@ -54,6 +54,8 @@ fs.open("decodetable.txt", "w", (err, fd) => {
 		console.error("Failed to open file", err);
 		return;
 	}
+	
+	// const testresult = getAssemblyTemplate(0b1000011000000000);
 
 	for (let OpcodeIndex = 0; OpcodeIndex < 65536; ++OpcodeIndex) {
 		
@@ -220,6 +222,31 @@ function opToSegment(OpName, FirstByte) {
 	return `${OpName} ${segRegName[reg]} ;0`;
 }
 
+function loadEaToRegister(SecondByte) {
+	const mod = (SecondByte >> 6);
+	const reg = (SecondByte & 0b111000) >> 3;
+	const rm = (SecondByte & 0b111);
+	let result = "";
+	if (mod == 3) {
+		result = "LEA" + 
+			" " + regName[1][reg] + ", " + EffAddress[mod][1][rm];
+	} else {
+		result = "LEA" + 
+			" " + regName[1][reg] + ", " + EffAddress[mod][rm];
+	}
+
+	if (mod == 1) {
+		result += " ;1";
+	} else if (mod == 2) {
+		result += " ;2";
+	} else if (mod == 0 && rm == 0b110) {
+		result += " ;2";
+	} else {
+		result += " ;0";
+	}
+	return result;
+}
+
 function getAssemblyTemplate(OpcodeIndex) {
 	const FirstByte = OpcodeIndex >> 8;
 	const FirstSixBits = FirstByte >> 2;
@@ -269,6 +296,8 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return `LOOPNZ {bytes} ;1`;
 	} else if (FirstByte == 0 && SecondByte == 0b11100011) {
 		return `JCXZ {bytes} ;1`;
+	} else if (FirstByte == 0 && SecondByte == 0b11010111) {
+		return `XLAT ;0`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
@@ -306,11 +335,19 @@ function getAssemblyTemplate(OpcodeIndex) {
 	else if (FirstByte == 0b10001100 && ((SecondByte & 0b100000) >> 5) == 0) {
 		return "NOT IMPLEMENTED";
 	} 
+	else if (FirstSevenBits == 0b1000011) {
+		return registerMemoryToFromRegister("XCHG", FirstByte, SecondByte);
+	}
 	// Register/Memory to/from register
 	// 100010,d,w		mod,reg,r/m 	disp-lo 	disp-hi
 	else if (FirstSixBits == 0b100010) {
 		return registerMemoryToFromRegister("MOV", FirstByte, SecondByte);
 	} 
+	// load ea to register
+	// 10001101 	mod,reg,r/m 	disp-lo 	disp-hi
+	else if (FirstByte == 0b10001101) {
+		return loadEaToRegister(SecondByte);
+	}
 	// Add register to from memory
 	// 100000,s,w  	mod,reg,rm 	disp-lo   disp-hi 	data 	dataifw=1
 	else if (FirstSixBits == 0b100000) {
@@ -323,6 +360,11 @@ function getAssemblyTemplate(OpcodeIndex) {
 			return immediateToRegisterMemoryArith("CMP", FirstByte, SecondByte);
 		}
 	}
+	// Xchange register with accumulator
+	else if (FirstByte == 0 && ((SecondByte >> 3) == 0b10010)) {
+		const reg = (SecondByte & 0b111);
+		return `XCHG AX, ${regName[1][reg]} ;0`;
+	}
 	// Add immediate to accumulator
 	// 0000010,w 	data 	dataifw=1 
 	else if (FirstByte == 0 && SecondSevenBits == 0b10) {
@@ -331,8 +373,19 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return immediateToAccumulatorAdd("SUB", FirstByte, SecondByte);
 	} else if (FirstByte == 0 && SecondSevenBits == 0b0011110) {
 		return immediateToAccumulatorAdd("CMP", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b1110010) {
+		const w = SecondByte & 0b1;
+		return `IN ${w == 0 ? 'AL' : 'AX'}, {bytes} ;-1`;
+	} else if (FirstByte == 0 && SecondSevenBits == 0b1110011) {
+		const w = SecondByte & 0b1;
+		return `OUT {bytes}, ${w == 0 ? 'AL' : 'AX'} ;-1`;
+	} else if (FirstByte == 0 && SecondSevenBits == 0b1110110) {
+		const w = SecondByte & 0b1;
+		return `IN ${w == 0 ? 'AL' : 'AX'}, DX ;0`;
+	} else if (FirstByte == 0 && SecondSevenBits == 0b1110111) {
+		const w = SecondByte & 0b1;
+		return `OUT DX, ${w == 0 ? 'AL' : 'AX'} ;0`;
 	}
-
 	else if (FirstByte == 0 && (SecondByte >> 3) == 0b01010) {
 		return opToRegister("PUSH", FirstByte, SecondByte);
 	}
