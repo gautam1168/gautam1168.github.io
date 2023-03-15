@@ -24,15 +24,28 @@ async function showFileBinary() {
 }
 
 async function loadDecodeTable() {
-	const res = await fetch("decodetable.txt")
-	const rawData = await res.text();
+	window.translationKey1Byte = new Array(255);
+	window.translationKey2Byte = new Array(65536);
 
-	const lines = rawData.split("\n");
-	window.translationKey = new Array(65536);
-	for (let i = 0; i < 65536; ++i) {
+	let res = await fetch("decodetable1byte.txt")
+	let rawData = await res.text();
+
+	let lines = rawData.split("\n");
+	for (let i = 0; i <= 255; ++i) {
 		const translation = lines[i].split(' ');
 		if (translation[1]) {
-			window.translationKey[i] = translation.slice(1).join(' ');
+			window.translationKey1Byte[i] = translation.slice(1).join(' ');
+		}
+	}
+	
+	res = await fetch("decodetable2byte.txt")
+	rawData = await res.text();
+
+	lines = rawData.split("\n");
+	for (let i = 0; i <= 65536; ++i) {
+		const translation = lines[i].split(' ');
+		if (translation[1]) {
+			window.translationKey2Byte[i] = translation.slice(1).join(' ');
 		}
 	}
 }
@@ -49,14 +62,19 @@ function decompile(bytes) {
 
 		let interimCode = "";
 		let translation;
-		if (translation = window.translationKey[bigIndex]) {
+		if (translation = window.translationKey1Byte[firstByte]) 
+		{
+			byteIndex += 1;
+			interimCode += firstByte.toString(2).padStart(8, '0') + " ";
+		}
+		else if (translation = window.translationKey2Byte[bigIndex]) 
+		{
 			byteIndex += 2;
 			interimCode += firstByte.toString(2).padStart(8, '0') + " " + 
 				secondByte.toString(2).padStart(8, '0');
-		} else if (translation = window.translationKey[firstByte]) {
-			byteIndex += 1;
-			interimCode += firstByte.toString(2).padStart(8, '0') + " ";
-		} else {
+		} 
+		else 
+		{
 			console.log(result);
 			throw new Error("Cannot translate " + 
 				firstByte.toString(2).padStart(8, '0') + ", " + 
