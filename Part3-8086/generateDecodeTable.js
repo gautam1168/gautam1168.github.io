@@ -370,6 +370,8 @@ function getAssemblyTemplate(OpcodeIndex) {
 			return immediateToRegisterMemoryArith("SUB", FirstByte, SecondByte);
 		} else if (reg == 0b111) {
 			return immediateToRegisterMemoryArith("CMP", FirstByte, SecondByte);
+		} else if (reg == 0b010) {
+			return immediateToRegisterMemoryArith("ADC", FirstByte, SecondByte);
 		}
 	}
 	// Xchange register with accumulator
@@ -385,6 +387,8 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return immediateToAccumulatorAdd("SUB", FirstByte, SecondByte);
 	} else if (FirstByte == 0 && SecondSevenBits == 0b0011110) {
 		return immediateToAccumulatorAdd("CMP", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0001010) {
+		return immediateToAccumulatorAdd("ADC", FirstByte, SecondByte);
 	} else if (FirstByte == 0 && SecondSevenBits == 0b1110010) {
 		const w = SecondByte & 0b1;
 		return `IN ${w == 0 ? 'AL' : 'AX'}, {bytes} ;-1`;
@@ -435,6 +439,10 @@ function getAssemblyTemplate(OpcodeIndex) {
 	// 001010,d,w 	mod,reg,rm 	disp-lo 	disp-hi
 	else if (FirstSixBits == 0b001010) {
 		return registerMemoryToFromRegister("SUB", FirstByte, SecondByte);
+	}
+	// 000100,d,w 	mod,reg,rm disp-lo		disp-hi
+	else if (FirstSixBits == 0b000100) {
+		return registerMemoryToFromRegister("ADC", FirstByte, SecondByte);
 	}
 	// Add  
 	// 000000,d,w 	mod,reg,rm 	disp-lo 	disp-hi
