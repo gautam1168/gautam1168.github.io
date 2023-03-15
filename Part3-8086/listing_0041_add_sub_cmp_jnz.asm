@@ -287,3 +287,17 @@ bits 16
 ;dec word [9349]
 ;dec byte [bp]
 ;
+;neg ax
+;neg cx
+;neg dh
+;neg al
+;neg ah
+;neg sp
+;neg di
+;neg byte [bp + 1002]
+;neg word [bx + 39]
+;neg byte [bx + si + 5]
+;neg word [bp + di - 10044]
+;neg word [9349]
+;neg byte [bp]
+;
