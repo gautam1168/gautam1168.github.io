@@ -333,6 +333,10 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return `AAA ;0`;
 	} else if (FirstByte == 0 && SecondByte == 0b00100111) {
 		return `DAA ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b00111111) {
+		return `AAS ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b00101111) {
+		return `DAS ;0`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
