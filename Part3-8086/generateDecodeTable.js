@@ -389,6 +389,14 @@ function getAssemblyTemplate(OpcodeIndex) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		if (reg == 0b011) {
 			return incVariant("NEG", FirstByte, SecondByte);
+		} else if (reg == 0b100) {
+			return incVariant("MUL", FirstByte, SecondByte);
+		} else if (reg == 0b101) {
+			return incVariant("IMUL", FirstByte, SecondByte);
+		} else if (reg == 0b110) {
+			return incVariant("DIV", FirstByte, SecondByte);
+		} else if (reg == 0b111) {
+			return incVariant("IDIV", FirstByte, SecondByte);
 		}
 	}
 	// Register/Memory to/from register
