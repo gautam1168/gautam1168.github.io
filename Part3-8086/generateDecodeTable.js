@@ -97,7 +97,7 @@ fs.open("decodetable2byte.txt", "w", (err, fd) => {
 	}
 
 	debugger
-	getAssemblyTemplate2Byte(0b1000000000000111);
+	getAssemblyTemplate2Byte(0b1111111101000111);
 	
 	for (let OpcodeIndex = 0; OpcodeIndex <= 65536; ++OpcodeIndex) {
 		
@@ -583,27 +583,23 @@ function getAssemblyTemplate2Byte(OpcodeIndex) {
 		return registerMemoryToFromRegister("XCHG", FirstByte, SecondByte);
 	}
 	// 11111111, 	mod,110,r/m		disp-lo 	disp-hi
-	else if (FirstByte == 0b11111111) {
-		const reg = (SecondByte & 0b111000) >> 3;
-		if (reg == 0b110) {
-			return opToRegisterMemory("PUSH", FirstByte, SecondByte);
-		} else if (reg == 0b010) {
-			return incVariant("CALL", FirstByte, SecondByte);
-		} else if (reg == 0b011) {
-			return incVariant("CALL", FirstByte, SecondByte);
-		} else if (reg == 0b100) {
-			return incVariant("JMP", FirstByte, SecondByte);
-		} else if (reg == 0b101) {
-			return incVariant("JMP", FirstByte, SecondByte);
-		}
-	}
 	else if (FirstSevenBits == 0b1111111) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		if (reg == 0) {
 			return incVariant("INC", FirstByte, SecondByte);
 		} else if (reg == 0b001) {
 			return incVariant("DEC", FirstByte, SecondByte);
-		} 	
+		} else if (FirstByte == 0b11111111 && reg == 0b110) {
+			return opToRegisterMemory("PUSH", FirstByte, SecondByte);
+		} else if (FirstByte == 0b11111111 && reg == 0b010) {
+			return incVariant("CALL", FirstByte, SecondByte);
+		} else if (FirstByte == 0b11111111 && reg == 0b011) {
+			return incVariant("CALL", FirstByte, SecondByte);
+		} else if (FirstByte == 0b11111111 && reg == 0b100) {
+			return incVariant("JMP", FirstByte, SecondByte);
+		} else if (FirstByte == 0b11111111 && reg == 0b101) {
+			return incVariant("JMP", FirstByte, SecondByte);
+		}
 	}
 	else if (FirstSevenBits == 0b1111011) {
 		const reg = (SecondByte & 0b111000) >> 3;

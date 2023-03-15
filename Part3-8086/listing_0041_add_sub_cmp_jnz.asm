@@ -232,20 +232,20 @@ adc al, 9
 adc cx, bx
 adc ch, al
 
-;inc ax
-;inc cx
-;inc dh
-;inc al
-;inc ah
-;inc sp
-;inc di
-;inc byte [bp + 1002]
-;inc word [bx + 39]
-;inc byte [bx + si + 5]
-;inc word [bp + di - 10044]
-;inc word [9349]
-;inc byte [bp]
-;
+inc ax
+inc cx
+inc dh
+inc al
+inc ah
+inc sp
+inc di
+inc byte [bp + 1002]
+inc word [bx + 39]
+inc byte [bx + si + 5]
+inc word [bp + di - 10044]
+inc word [9349]
+inc byte [bp]
+
 ;aaa
 ;daa
 ;
