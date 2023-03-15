@@ -8,6 +8,10 @@ const regName = [
 	["AX", "CX", "DX", "BX", "SP", "BP", "SI", "DI"],
 ];
 
+const segRegName = [
+	"ES", "CS", "SS", "DS"
+];
+
 // EffAddress[mod][rm]
 // EffAddress[11][w][rm]
 const EffAddress = [
@@ -94,7 +98,7 @@ function registerMemoryToFromRegister(OpName, FirstByte, SecondByte) {
 	} else if (mod == 2) {
 		result += " ;2";
 	} else if (mod == 0 && rm == 0b110) {
-		result += " ;" + (w == 0 ? 1 : 2);
+		result += " ;2";
 	} else {
 		result += " ;0";
 	}
@@ -178,6 +182,42 @@ function memoryToAccumulator(OpName, FirstByte, SecondByte) {
 function immediateToAccumulatorAdd(OpName, FirstByte, SecondByte) {
 	const w = (SecondByte & 0b1);
 	return `${OpName} ${ w == 0 ? 'AL' : 'AX' }, {bytes} ;${w == 0 ? 1 : 2}`
+}
+
+function opToRegisterMemory(OpName, FirstByte, SecondByte) {
+	const mod = (SecondByte >> 6);
+	const rm = (SecondByte & 0b111);
+
+	let result;
+	if (mod == 3) {
+		result = OpName + 
+			" " + EffAddress[mod][1][rm];
+	} else {
+		result = OpName + 
+			" " + EffAddress[mod][rm];
+	}
+
+	if (mod == 1) {
+		result += " ;1";
+	} else if (mod == 2) {
+		result += " ;2";
+	}  else if (mod == 0 && rm == 0b110) {
+		result += " ;2";
+	} else {
+		result += " ;0";
+	}
+
+	return result;
+}
+
+function opToRegister(OpName, FirstByte, SecondByte) {
+	const reg = (SecondByte & 0b111);
+	return `${OpName} ${regName[1][reg]} ;0`;
+}
+
+function opToSegment(OpName, FirstByte) {
+	const reg = (FirstByte & 0b11000) >> 3;
+	return `${OpName} ${segRegName[reg]} ;0`;
 }
 
 function getAssemblyTemplate(OpcodeIndex) {
@@ -293,6 +333,35 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return immediateToAccumulatorAdd("CMP", FirstByte, SecondByte);
 	}
 
+	else if (FirstByte == 0 && (SecondByte >> 3) == 0b01010) {
+		return opToRegister("PUSH", FirstByte, SecondByte);
+	}
+	else if (FirstByte == 0 && (SecondByte >> 3) == 0b01011) {
+		return opToRegister("POP", FirstByte, SecondByte);
+	}
+	else if ((FirstByte == 0) && 
+		((SecondByte & 0b11100000) == 0) && 
+		((SecondByte & 0b111) == 0b110)) {
+		return opToSegment("PUSH", SecondByte);
+	}
+	else if ((FirstByte == 0) && 
+		((SecondByte & 0b11100000) == 0) && 
+		((SecondByte & 0b111) == 0b111)) {
+		return opToSegment("POP", SecondByte);
+	}
+	// 11111111, 	mod,110,r/m		disp-lo 	disp-hi
+	else if (FirstByte == 0b11111111) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0b110) {
+			return opToRegisterMemory("PUSH", FirstByte, SecondByte);
+		}
+	}
+	else if (FirstByte == 0b10001111) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0) {
+			return opToRegisterMemory("POP", FirstByte, SecondByte);
+		}
+	}
 
 	// 001110,d,w  	mod,reg,rm	disp-lo		disp-hi
 	else if (FirstSixBits == 0b001110) {
@@ -307,6 +376,7 @@ function getAssemblyTemplate(OpcodeIndex) {
 	else if (FirstSixBits == 0) {
 		return registerMemoryToFromRegister("ADD", FirstByte, SecondByte);
 	}
+	
 	
 	return "";
 }
