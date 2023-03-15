@@ -388,6 +388,8 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return `CBW ;0`;
 	} else if (FirstByte == 0 && SecondByte == 0b10011001) {
 		return `CWD ;0`;
+	} else if (FirstByte == 0 && SecondByte == 0b11000011) {
+		return `RET ;0`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
@@ -447,6 +449,24 @@ function getAssemblyTemplate(OpcodeIndex) {
 	} 
 	else if (FirstSevenBits == 0b1000011) {
 		return registerMemoryToFromRegister("XCHG", FirstByte, SecondByte);
+	}
+	// 11111111, 	mod,110,r/m		disp-lo 	disp-hi
+	else if (FirstByte == 0b11111111) {
+		const reg = (SecondByte & 0b111000) >> 3;
+		if (reg == 0b110) {
+			return opToRegisterMemory("PUSH", FirstByte, SecondByte);
+		} else if (reg == 0b010) {
+			return incVariant("CALL", FirstByte, SecondByte);
+		} else if (reg == 0b011) {
+			return incVariant("CALL", FirstByte, SecondByte);
+		} else if (reg == 0b100) {
+			return incVariant("JMP", FirstByte, SecondByte);
+		} else if (reg == 0b101) {
+			return incVariant("JMP", FirstByte, SecondByte);
+		}
+	}
+	else if (FirstByte == 0 && SecondByte == 0b11000010) {
+		return `RET {bytes} ;2`;
 	}
 	else if (FirstSevenBits == 0b1111111) {
 		const reg = (SecondByte & 0b111000) >> 3;
@@ -584,13 +604,7 @@ function getAssemblyTemplate(OpcodeIndex) {
 		((SecondByte & 0b111) == 0b111)) {
 		return opToSegment("POP", SecondByte);
 	}
-	// 11111111, 	mod,110,r/m		disp-lo 	disp-hi
-	else if (FirstByte == 0b11111111) {
-		const reg = (SecondByte & 0b111000) >> 3;
-		if (reg == 0b110) {
-			return opToRegisterMemory("PUSH", FirstByte, SecondByte);
-		}
-	}
+	
 	else if (FirstByte == 0b10001111) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		if (reg == 0) {
