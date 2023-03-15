@@ -55,7 +55,8 @@ fs.open("decodetable.txt", "w", (err, fd) => {
 		return;
 	}
 	
-	// const testresult = getAssemblyTemplate(0b1000011000000000);
+	debugger
+	const testresult = getAssemblyTemplate(0b0000000001111010);
 
 	for (let OpcodeIndex = 0; OpcodeIndex < 65536; ++OpcodeIndex) {
 		

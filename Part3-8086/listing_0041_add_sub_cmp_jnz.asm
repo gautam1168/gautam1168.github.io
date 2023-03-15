@@ -29,7 +29,7 @@ bits 16
 ;add [bp], bx
 ;add [bp + 0], bx
 ;add [bx + 2], cx
-;add [bp + si + 4], bh
+add [bp + si + 4], bh
 ;add [bp + di + 6], di
 ;add byte [bx], 34
 ;add word [bp + si + 1000], 29
@@ -456,7 +456,7 @@ bits 16
 ;ret -7
 ;ret 500
 ;ret
-
+;
 ;label:
 ;je label
 ;jl label
@@ -478,19 +478,19 @@ bits 16
 ;loopz label
 ;loopnz label
 ;jcxz label
-
+;
 ;int 13
 ;int 3
-
-into
-iret
-
-clc
-cmc
-stc
-cld
-std
-cli
-sti
-hlt
-wait
+;
+;into
+;iret
+;
+;clc
+;cmc
+;stc
+;cld
+;std
+;cli
+;sti
+;hlt
+;wait
