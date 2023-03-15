@@ -405,6 +405,8 @@ function getAssemblyTemplate(OpcodeIndex) {
 			return immediateToRegisterMemoryArith("CMP", FirstByte, SecondByte);
 		} else if (reg == 0b010) {
 			return immediateToRegisterMemoryArith("ADC", FirstByte, SecondByte);
+		} else if (reg == 0b011) {
+			return immediateToRegisterMemoryArith("SBB", FirstByte, SecondByte);
 		}
 	}
 	// Xchange register with accumulator
@@ -426,6 +428,9 @@ function getAssemblyTemplate(OpcodeIndex) {
 		return immediateToAccumulatorAdd("CMP", FirstByte, SecondByte);
 	} else if (FirstByte == 0 && SecondSevenBits == 0b0001010) {
 		return immediateToAccumulatorAdd("ADC", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0001110) {
+		return immediateToAccumulatorAdd("SBB", FirstByte, SecondByte);
+	} else if (FirstByte == 0 && SecondSevenBits == 0b0001110) {
 	} else if (FirstByte == 0 && SecondSevenBits == 0b1110010) {
 		const w = SecondByte & 0b1;
 		return `IN ${w == 0 ? 'AL' : 'AX'}, {bytes} ;-1`;
@@ -472,6 +477,10 @@ function getAssemblyTemplate(OpcodeIndex) {
 	// 001110,d,w  	mod,reg,rm	disp-lo		disp-hi
 	else if (FirstSixBits == 0b001110) {
 		return registerMemoryToFromRegister("CMP", FirstByte, SecondByte);
+	}
+	// 000110,d,w 	mode,reg,rm 	disp-lo 	disp-hi
+	else if (FirstSixBits == 0b000110) {
+		return registerMemoryToFromRegister("SBB", FirstByte, SecondByte);
 	}
 	// 001010,d,w 	mod,reg,rm 	disp-lo 	disp-hi
 	else if (FirstSixBits == 0b001010) {

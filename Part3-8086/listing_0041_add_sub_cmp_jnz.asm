@@ -232,19 +232,45 @@ bits 16
 ;adc cx, bx
 ;adc ch, al
 
-inc ax
-inc cx
-inc dh
-inc al
-inc ah
-inc sp
-inc di
-inc byte [bp + 1002]
-inc word [bx + 39]
-inc byte [bx + si + 5]
-inc word [bp + di - 10044]
-inc word [9349]
-inc byte [bp]
+;inc ax
+;inc cx
+;inc dh
+;inc al
+;inc ah
+;inc sp
+;inc di
+;inc byte [bp + 1002]
+;inc word [bx + 39]
+;inc byte [bx + si + 5]
+;inc word [bp + di - 10044]
+;inc word [9349]
+;inc byte [bp]
+;
+;aaa
+;daa
+;
+;sub cx, [bp]
+;sub dx, [bx + si]
+;sub [bp + di + 5000], ah
+;sub [bx], al
+;sub sp, 392
+;sub si, 5
+;sub ax, 1000
+;sub ah, 30
+;sub al, 9
+;sub cx, bx
+;sub ch, al
+;
+;sbb cx, [bp]
+;sbb dx, [bx + si]
+;sbb [bp + di + 5000], ah
+;sbb [bx], al
+;sbb sp, 392
+;sbb si, 5
+;sbb ax, 1000
+;sbb ah, 30
+;sbb al, 9
+;sbb cx, bx
+;sbb ch, al
+;
 
-aaa
-daa
