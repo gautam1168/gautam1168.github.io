@@ -53,7 +53,7 @@ async function loadDecodeTable() {
 function decompile(bytes) {
 	let byteIndex = 0;
 	let result = [];
-	let prefix = "";
+	let prefix = [];
 	const EightBitCaster = new Int8Array(1);
 	const SixteenBitCaster = new Int16Array(1);
 	while (byteIndex < bytes.length) {
@@ -89,7 +89,7 @@ function decompile(bytes) {
 		const code = translation.split(";");
 		if (code.length == 3) {
 			if (code[2] == "prefix") {
-				prefix = code[0];
+				prefix.push(code[0]);
 			}
 		} else {
 			const numBytesToReadArray = code[1].split(",").map(it => parseInt(it));
@@ -123,11 +123,19 @@ function decompile(bytes) {
 					byteIndex += 2;
 				} 
 			}
-			if (prefix) {
-				interimCode += prefix + " " + code[0];
-			} else {
-				interimCode += " " + code[0];
+
+			if (prefix.length > 0) {
+				for (pref of prefix) {
+					if (pref == "LOCK") {
+						code[0] = pref + " " + code[0];
+					} else if (pref) {
+						code[0] = code[0].replace("[", " " + pref.trim() + "[");
+					}
+				}
+				prefix.length = 0;
 			}
+
+			interimCode += " " + code[0];
 			result.push(interimCode.replace(/\+\-/g, "-"));
 		}
 	}

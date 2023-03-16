@@ -353,6 +353,60 @@ function repInstruction(FirstByte, SecondByte) {
 	}
 }
 
+function segmentRegisterToRegisterMemory(OpName, FirstByte, SecondByte) {
+	const mod = SecondByte >> 6;
+	const SR = (SecondByte & 0b00011000) >> 3;
+	const rm = (SecondByte & 0b111);
+
+	let result;
+	if (mod == 3) {
+		result = OpName + 
+			" " + segRegName[SR] + ":" + EffAddress[mod][0][rm] + ", " + regName[0][SR];
+	} else {
+		result = OpName + 
+			" " + segRegName[SR] + ":" + EffAddress[mod][rm] + ", " + regName[0][SR];
+	}
+
+	if (mod == 1) {
+		result += " ;1";
+	} else if (mod == 2) {
+		result += " ;2";
+	} else if (mod == 0 && rm == 0b110) {
+		result += " ;2";
+	} else {
+		result += " ;0";
+	}
+
+	return result;
+}
+
+function registerMemoryToSegmentRegister(OpName, FirstByte, SecondByte) {
+	const mod = SecondByte >> 6;
+	const SR = (SecondByte & 0b00011000) >> 3;
+	const rm = (SecondByte & 0b111);
+
+	let result;
+	if (mod == 3) {
+		result = OpName + 
+			" " + regName[0][SR] + ", " + segRegName[SR] + ":" + EffAddress[mod][0][rm];
+	} else {
+		result = OpName + 
+			" " + regName[0][SR] + ", " + segRegName[SR] + ":" + EffAddress[mod][rm];
+	}
+
+	if (mod == 1) {
+		result += " ;1";
+	} else if (mod == 2) {
+		result += " ;2";
+	} else if (mod == 0 && rm == 0b110) {
+		result += " ;2";
+	} else {
+		result += " ;0";
+	}
+
+	return result;
+}
+
 function getAssemblyTemplate1Byte(OpcodeIndex) {
 	const FirstByte = OpcodeIndex;
 	const FirstNibble = FirstByte >> 4;
@@ -449,6 +503,14 @@ function getAssemblyTemplate1Byte(OpcodeIndex) {
 		return `WAIT ;0`;
 	} else if (FirstByte == 0b11110000) {
 		return `LOCK ;0 ;prefix`;
+	} else if (FirstByte == 0b00101110) {
+		return `CS: ;0 ;prefix`;
+	} else if (FirstByte == 0b00110110) {
+		return `SS: ;0 ;prefix`;
+	} else if (FirstByte == 0b00100110) {
+		return `ES: ;0 ;prefix`;
+	} else if (FirstByte == 0b00111110) {
+		return `DS: ;0 ;prefix`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
@@ -621,6 +683,14 @@ function getAssemblyTemplate2Byte(OpcodeIndex) {
 	else if (FirstSixBits == 0b100010) {
 		return registerMemoryToFromRegister("MOV", FirstByte, SecondByte);
 	} 
+	// Register/Memory to segment register
+	else if (FirstByte == 0b10001110) {
+		return registerMemoryToSegmentRegister("MOV", FirstByte, SecondByte);
+	}
+	// Segment register to register/memory
+	else if (FirstByte == 0b10001100) {
+		return segmentRegisterToRegisterMemory("MOV", FirstByte, SecondByte);
+	}
 	// load ea to register
 	// 10001101 	mod,reg,r/m 	disp-lo 	disp-hi
 	else if (FirstByte == 0b10001101) {
