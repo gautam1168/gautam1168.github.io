@@ -53,6 +53,7 @@ async function loadDecodeTable() {
 function decompile(bytes) {
 	let byteIndex = 0;
 	let result = [];
+	let prefix = "";
 	const EightBitCaster = new Int8Array(1);
 	const SixteenBitCaster = new Int16Array(1);
 	while (byteIndex < bytes.length) {
@@ -86,39 +87,49 @@ function decompile(bytes) {
 		}
 
 		const code = translation.split(";");
-		const numBytesToReadArray = code[1].split(",").map(it => parseInt(it));
-		for (let numBytesToRead of numBytesToReadArray) {
-			let signExtend = false;
-			if (numBytesToRead == -1) {
-				signExtend = true;
-				numBytesToRead = 1;
+		if (code.length == 3) {
+			if (code[2] == "prefix") {
+				prefix = code[0];
 			}
+		} else {
+			const numBytesToReadArray = code[1].split(",").map(it => parseInt(it));
+			for (let numBytesToRead of numBytesToReadArray) {
+				let signExtend = false;
+				if (numBytesToRead == -1) {
+					signExtend = true;
+					numBytesToRead = 1;
+				}
 
-			if (numBytesToRead == 1) {
-				const value = bytes[byteIndex++];
-				/*
-				interimCode += " " + value.toString(2).padStart(8, '0');
-				*/
-				if (!signExtend) {
-					EightBitCaster[0] = value;
-					code[0] = code[0].replace("{bytes}", EightBitCaster[0]);
-				} else {
+				if (numBytesToRead == 1) {
+					const value = bytes[byteIndex++];
+					/*
+					interimCode += " " + value.toString(2).padStart(8, '0');
+					*/
+					if (!signExtend) {
+						EightBitCaster[0] = value;
+						code[0] = code[0].replace("{bytes}", EightBitCaster[0]);
+					} else {
+						SixteenBitCaster[0] = value;
+						code[0] = code[0].replace("{bytes}", SixteenBitCaster[0]);
+					}
+				} else if (numBytesToRead == 2) {
+					const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
+					/*
+					interimCode += " " + bytes[byteIndex].toString(2).padStart(8, '0') +
+						" " + bytes[byteIndex + 1].toString(2).padStart(8, '0');
+					*/
 					SixteenBitCaster[0] = value;
 					code[0] = code[0].replace("{bytes}", SixteenBitCaster[0]);
-				}
-			} else if (numBytesToRead == 2) {
-				const value = ((bytes[byteIndex + 1] << 8) | bytes[byteIndex]);
-				/*
-				interimCode += " " + bytes[byteIndex].toString(2).padStart(8, '0') +
-					" " + bytes[byteIndex + 1].toString(2).padStart(8, '0');
-				*/
-				SixteenBitCaster[0] = value;
-				code[0] = code[0].replace("{bytes}", SixteenBitCaster[0]);
-				byteIndex += 2;
-			} 
+					byteIndex += 2;
+				} 
+			}
+			if (prefix) {
+				interimCode += prefix + " " + code[0];
+			} else {
+				interimCode += " " + code[0];
+			}
+			result.push(interimCode.replace(/\+\-/g, "-"));
 		}
-		interimCode += " " + code[0];
-		result.push(interimCode.replace(/\+\-/g, "-"));
 	}
 	return result;
 }

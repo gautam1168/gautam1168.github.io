@@ -447,6 +447,8 @@ function getAssemblyTemplate1Byte(OpcodeIndex) {
 		return `HLT ;0`;
 	} else if (FirstByte == 0b10011011) {
 		return `WAIT ;0`;
+	} else if (FirstByte == 0b11110000) {
+		return `LOCK ;0 ;prefix`;
 	}
 	// Memory to accumulator
 	// 1010000,w 	addr-lo		addr-hi
