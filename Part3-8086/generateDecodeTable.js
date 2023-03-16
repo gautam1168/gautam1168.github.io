@@ -572,12 +572,15 @@ function getAssemblyTemplate2Byte(OpcodeIndex) {
 		} else if (reg == 0b010) {
 			return incVariant("NOT", FirstByte, SecondByte);
 		}
-	} else if (FirstSevenBits == 0b0011010) {
+	} 
+	/*
+	else if (FirstSevenBits == 0b0011010) {
 		const reg = (SecondByte & 0b111000) >> 3;
 		if (reg == 0b110) {
 			return immediateToRegisterMemoryMov("XOR", FirstByte, SecondByte);
 		}
 	}
+	*/
 	else if (FirstByte == 0b11110011) {
 		return repInstruction(FirstByte, SecondByte);
 	}
@@ -643,6 +646,8 @@ function getAssemblyTemplate2Byte(OpcodeIndex) {
 			return immediateToRegisterMemoryMov("AND", FirstByte, SecondByte);
 		} else if (FirstSevenBits == 0b1000000 && reg == 0b001) {
 			return immediateToRegisterMemoryMov("OR", FirstByte, SecondByte);
+		} else if (FirstSevenBits == 0b1000000 && reg == 0b110) {
+			return immediateToRegisterMemoryMov("XOR", FirstByte, SecondByte);
 		}
 	}
 	// shl variant

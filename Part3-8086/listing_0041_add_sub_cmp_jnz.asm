@@ -208,10 +208,8 @@ popf
 
 add cx, [bp]
 add dx, [bx + si]
-;;--- FIX THIS---
-;add [bp + di + 5000], ah
-;add [bx], al
-;;--------------
+add [bp + di + 5000], ah
+add [bx], al
 add sp, 392
 add si, 5
 add ax, 1000
@@ -386,15 +384,11 @@ and [bp + si + 10], ch
 and [bx + di + 1000], dx
 and bx, [bp]
 and cx, [4384]
-;;---- FIX This---------
-;and byte [bp - 39], 239
-;;-----------------------
+and byte [bp - 39], 239
 and word [bx + si - 4332], 10328
 
 test bx, cx
-;;-----FIX This------
-;test dh, [bp + 390]
-;;-----------------
+test dh, [bp + 390]
 test [bp + 2], si
 test bl, 20
 test byte [bx], 34
@@ -410,9 +404,7 @@ or [bp + si + 10], ch
 or [bx + di + 1000], dx
 or bx, [bp]
 or cx, [4384]
-;;-----FIX This---------
-;or byte [bp - 39], 239
-;;-----------------------
+or byte [bp - 39], 239
 or word [bx + si - 4332], 10328
 
 xor al, ah
@@ -425,10 +417,8 @@ xor [bp + si + 10], ch
 xor [bx + di + 1000], dx
 xor bx, [bp]
 xor cx, [4384]
-;;------FIX This-------------
-;xor byte [bp - 39], 239
-;xor word [bx + si - 4332], 10328
-;;-----------------------------
+xor byte [bp - 39], 239
+xor word [bx + si - 4332], 10328
 
 rep movsb
 rep cmpsb
@@ -441,9 +431,7 @@ rep lodsw
 rep stosb
 rep stosw
 
-;;---------FIX THis----
-;call [39201]
-;;---------------------
+call [39201]
 call [bp - 100]
 call sp
 call ax
