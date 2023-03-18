@@ -60,14 +60,28 @@ isMatch(char *Input, char *Pattern)
 	}
 }
 
-bool
-runMatch(char *Memory)
+void
+Print(unsigned char *Buffer, int Width, int Height)
 {
-	char *Input = Memory;
-	char *Pattern = Memory;
+	unsigned int *Pixel = (unsigned int *)Buffer;
+	for (int Index = 0; Index < Width * Height; ++Index) 
+	{
+		// AABBGGRR
+		*Pixel++ = 0xffaad000;
+	}
+}
+
+bool
+runMatch(unsigned char *Buffer, int Width, int Height, char *Input)
+{
+	char *Pattern = Input;
 	while (*(++Pattern) != '\0') {}
 	Pattern += 1;	
-	return isMatch(Input, Pattern);
+	bool Result = isMatch(Input, Pattern);
+
+	Print(Buffer, Width, Height);
+
+	return Result;
 }
 
 /*
