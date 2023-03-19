@@ -10,7 +10,7 @@ typedef struct call_stack_entry
 	int PatternIndex;
 	int CallerIndex;
 	int NumChildren;
-	struct call_stack_entry *Children;
+	struct call_stack_entry *Children[3];
 } call_stack_entry;
 
 unsigned int
@@ -77,6 +77,7 @@ isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart, 
 	Entry->CallerIndex = CallerIndex;
 	Entry->InputIndex = InputStart;
 	Entry->PatternIndex = PatternStart;
+	Entry->NumChildren = 0;
 	int SelfIndex = *UsedEntries;
 
 	if (InputStart > Len(Input)) 
@@ -96,7 +97,8 @@ isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart, 
 	else if ((Len(Pattern) - PatternStart) >= 2 && *(Pattern + PatternStart + 1) == '*') 
 	{
 		*UsedEntries = (*UsedEntries) + 1;
-		bool StarMatchIsSkipped = isMatchIndexBased(Input, InputStart, Pattern, PatternStart + 2, SelfIndex, UsedEntries, Mem);
+		bool StarMatchIsSkipped = isMatchIndexBased(Input, InputStart, Pattern, 
+				PatternStart + 2, SelfIndex, UsedEntries, Mem);
 		if (StarMatchIsSkipped) 
 		{
 			return true;
@@ -154,9 +156,33 @@ RenderBox(unsigned int *Pixel, int Width, int Height, box_config *BoxConfig)
 	}
 }
 
+call_stack_entry *
+MakeCallTree(call_stack_entry *Entries, int NumEntries)
+{
+	call_stack_entry *Root = 0;
+	for (int EntryIndex = 0;
+			EntryIndex < NumEntries;
+			++EntryIndex)
+	{
+		call_stack_entry *Curr = Entries + EntryIndex;
+		if (Curr->CallerIndex >= 0) 
+		{
+			call_stack_entry *Parent = Entries + Curr->CallerIndex;
+			Parent->Children[Parent->NumChildren++] = Curr;
+		}
+		else 
+		{
+			Root = Curr;
+		}
+	}
+	return Root;
+}
+
 void 
 RenderCallTree(unsigned int *Pixel, int Width, int Height, call_stack_entry *CallStack, int NumNodes)
 {
+	call_stack_entry *Root = MakeCallTree(CallStack, NumNodes);
+
 	unsigned int *PixelCursor = Pixel;
 	long NumPixels = Width * Height;
 	while (NumPixels--) 
