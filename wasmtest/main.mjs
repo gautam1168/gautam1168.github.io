@@ -71,6 +71,30 @@ function putString(memory, base, text) {
 	return base + text.length + 1;
 }
 
+function putFontTextureInBuffer(view, start) {
+	const ofCanvas = new OffscreenCanvas(40, 40);	
+	const ofCtx = ofCanvas.getContext("2d");
+	const characters = "abcdefghijklmnopqrstuvwxyz0123456789.*";
+	for (let i = 0; i < characters.length; ++i) {
+		const character = characters[i];
+		const measure = ofCtx.measureText(character);
+		ofCtx.fillText(character, 0, measure.fontBoundingBoxAscent);
+		const imageData = ofCtx.getImageData(0, 0, measure.width, 
+			measure.fontBoundingBoxDescent + measure.fontBoundingBoxAscent);
+
+		const imageView = new Uint8Array(imageData.data);
+
+		view[start++] = imageData.width;
+		view[start++] = imageData.height;
+		console.log(imageData.width, imageData.height);
+
+		for (let i = 0; i < imageView.length; ++i) {
+			view[start++] = imageView[i]; 
+		}
+	}
+	return start;
+}
+
 async function loadRecursiveSolution() {
 	// 1 page is 64kb 
 	const BytesRequiredForBuffer = Math.ceil(canvas.width * canvas.height * 4);
@@ -90,6 +114,10 @@ async function loadRecursiveSolution() {
 	const BufferStart = instance.exports.__heap_base;
 	// Reserve memory for imagedata
 	let DataStart = BufferStart + BytesRequiredForBuffer;
+	// Set text texture
+	DataStart = putFontTextureInBuffer(view, DataStart);
+	
+	
 	controlPanel.stringInput.value = "abbcd";
 	controlPanel.patternInput.value = ".*.d";
 

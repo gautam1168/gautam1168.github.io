@@ -218,11 +218,32 @@ RenderCallTree(unsigned int *Pixel, int Width, int Height, call_stack_entry *Cal
 	RecursiveNodeRender(Pixel, Width, Height, Root, LocX, LocY);
 }
 
+typedef struct font_pixels 
+{
+	int Width;
+	int Height;
+	unsigned int *Pixels;
+} font_pixels;
+
 bool
 runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 {
 	int UsedEntries = 0;
-	call_stack_entry CallStack[1024];
+	call_stack_entry CallStack[128];
+
+	unsigned char *DataStart  = ((unsigned char *)Pixels) + (Width * Height * 4);
+	font_pixels Characters[38];
+	for (int CharacterIndex = 0;
+			CharacterIndex < 38;
+			++CharacterIndex)
+	{
+		font_pixels *Character = Characters + CharacterIndex;
+		Character->Width = (int)(*DataStart++);
+		Character->Height = (int)(*DataStart++);
+		Character->Pixels = (unsigned int *)DataStart;
+		DataStart += Character->Width * Character->Height * 4;
+	}
+
 	char *Pattern = Input;
 	while (*(++Pattern) != '\0') {}
 	Pattern += 1;	
