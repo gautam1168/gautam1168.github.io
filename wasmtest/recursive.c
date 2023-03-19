@@ -211,19 +211,29 @@ void
 RenderWord(unsigned int *Pixel, font_pixels *Font, int Width, int Height, char *Word)
 {
 	int WordLength = Len(Word);
-	unsigned int *BufferPixelIndex = Pixel + (Width * 50) + 20;
-	unsigned int *CharacterPixels = Font->Pixels;
-	for (int RowIndex = 0; 
-			RowIndex < Font->Height;
-			++RowIndex)
+	unsigned int *BufferPixelIndex;
+	int XOffset = 20;
+	int YOffset = 20;
+
+	for (int i = 0; i < WordLength; ++i) 
 	{
-		BufferPixelIndex += (Width + 20 - Font->Width);
-		for (int ColIndex = 0;
-				ColIndex < Font->Width;
-				++ColIndex)
+		char Character = *(Word + i);
+		unsigned int *CharacterPixels = Font->Pixels;
+
+		for (int RowIndex = 0; 
+				RowIndex < Font->Height;
+				++RowIndex)
 		{
-			*BufferPixelIndex++ = *CharacterPixels++;	
+			BufferPixelIndex = Pixel + (RowIndex * Width) + XOffset + (Width * YOffset);
+			for (int ColIndex = 0;
+					ColIndex < Font->Width;
+					++ColIndex)
+			{
+				*BufferPixelIndex++ = *CharacterPixels++;	
+			}
 		}
+
+		XOffset += Font->Width;
 	}
 }
 
@@ -245,7 +255,7 @@ RenderCallTree(unsigned int *Pixel, font_pixels *Font, int Width, int Height, ca
 	int LocY = 0;
 	RecursiveNodeRender(Pixel, Width, Height, Root, LocX, LocY, Color);
 	
-	char Word[] = "Some Text\0";
+	char Word[] = "some text\0";
 	RenderWord(Pixel, Font, Width, Height, Word);
 }
 

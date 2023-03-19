@@ -86,7 +86,6 @@ function putFontTextureInBuffer(view, start) {
 
 		view[start++] = imageData.width;
 		view[start++] = imageData.height;
-		console.log(imageData.width, imageData.height);
 
 		for (let i = 0; i < imageView.length; ++i) {
 			view[start++] = imageView[i]; 
