@@ -74,10 +74,12 @@ function putString(memory, base, text) {
 function putFontTextureInBuffer(view, start) {
 	const ofCanvas = new OffscreenCanvas(40, 40);	
 	const ofCtx = ofCanvas.getContext("2d");
+	ofCtx.font = "15px sans-serif"
 	const characters = "abcdefghijklmnopqrstuvwxyz0123456789.* ";
 	for (let i = 0; i < characters.length; ++i) {
 		const character = characters[i];
 		const measure = ofCtx.measureText(character);
+		ofCtx.clearRect(0, 0, ofCanvas.width, ofCanvas.height);
 		ofCtx.fillText(character, 0, measure.fontBoundingBoxAscent);
 		const imageData = ofCtx.getImageData(0, 0, measure.width, 
 			measure.fontBoundingBoxDescent + measure.fontBoundingBoxAscent);

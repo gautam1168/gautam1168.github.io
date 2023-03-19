@@ -20,6 +20,8 @@ typedef struct font_pixels
 	unsigned int *Pixels;
 } font_pixels;
 
+unsigned char CharToFontIndexMap[256];
+
 unsigned int
 Len(char *String) 
 {
@@ -218,22 +220,24 @@ RenderWord(unsigned int *Pixel, font_pixels *Font, int Width, int Height, char *
 	for (int i = 0; i < WordLength; ++i) 
 	{
 		char Character = *(Word + i);
-		unsigned int *CharacterPixels = Font->Pixels;
+		int FontIndex = CharToFontIndexMap[Character];
+		font_pixels *Glyph = Font + FontIndex;
+		unsigned int *CharacterPixels = Glyph->Pixels;
 
 		for (int RowIndex = 0; 
-				RowIndex < Font->Height;
+				RowIndex < Glyph->Height;
 				++RowIndex)
 		{
 			BufferPixelIndex = Pixel + (RowIndex * Width) + XOffset + (Width * YOffset);
 			for (int ColIndex = 0;
-					ColIndex < Font->Width;
+					ColIndex < Glyph->Width;
 					++ColIndex)
 			{
 				*BufferPixelIndex++ = *CharacterPixels++;	
 			}
 		}
 
-		XOffset += Font->Width;
+		XOffset += Glyph->Width;
 	}
 }
 
@@ -265,6 +269,8 @@ runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 	int UsedEntries = 0;
 	call_stack_entry CallStack[128];
 
+	char FontGlyphs[] = "abcdefghijklmnopqrstuvwxyz0123456789.* ";
+
 	unsigned char *DataStart  = ((unsigned char *)Pixels) + (Width * Height * 4);
 	font_pixels Characters[39];
 	for (int CharacterIndex = 0;
@@ -276,6 +282,8 @@ runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 		Character->Height = (int)(*DataStart++);
 		Character->Pixels = (unsigned int *)DataStart;
 		DataStart += Character->Width * Character->Height * 4;
+		int AsciiCode = (int)(FontGlyphs[CharacterIndex]);
+		CharToFontIndexMap[AsciiCode] = CharacterIndex;
 	}
 
 	char *Pattern = Input;
