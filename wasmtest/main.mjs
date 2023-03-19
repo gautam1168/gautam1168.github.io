@@ -51,8 +51,8 @@ async function loadRecursiveSolution() {
 	// Reserve memory for imagedata
 	let Base = BufferStart + BytesRequiredForBuffer;
 	let DataStart = Base;
-	Base = putString(view, Base, "abcd");
-	Base = putString(view, Base, ".*");
+	Base = putString(view, Base, "abbcd");
+	Base = putString(view, Base, ".*.d");
 	const result = instance.exports.runMatch(
 		BufferStart, canvas.width, canvas.height, DataStart
 	);
@@ -62,32 +62,3 @@ async function loadRecursiveSolution() {
 	ctx.putImageData(imageData, 0, 0);
 }
 
-async function loadRecursiveSolutionWithCanvasBuffer() {
-	// 1 page is 64kb 
-	const BytesRequiredForBuffer = Math.ceil(canvas.width * canvas.height * 4);
-	const NumPagesForBuffer = Math.ceil(BytesRequiredForBuffer / 64000); 
-	// 100 page is 6.4MB which is the space allocated for the rest of the program
-	const memory = new WebAssembly.Memory({ initial: NumPagesForBuffer + 100 });
-	const res = await fetch("./recursive.wasm");	
-	const bytes = await res.arrayBuffer();
-	const { instance } = await WebAssembly.instantiate(bytes, {
-		env: {
-			memory
-		}
-	});
-
-	const BufferStart = instance.exports.__heap_base;
-	const view = new Uint8Array(memory.buffer);
-	// Reserve memory for imagedata
-	const Base = BufferStart + BytesRequiredForBuffer;
-	const Newbase = putString(view, Base, "abcd");
-	putString(view, Newbase, ".*");
-	const result = instance.exports.runMatch(
-		BufferStart, canvas.width, canvas.height, Base
-	);
-
-
-	const buffer = new Uint8ClampedArray(view.buffer, BufferStart, canvas.width * canvas.height * 4); 
-	const imageData = new ImageData(buffer, canvas.width, canvas.height);
-	ctx.putImageData(imageData, 0, 0);
-}

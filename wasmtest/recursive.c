@@ -179,6 +179,28 @@ MakeCallTree(call_stack_entry *Entries, int NumEntries)
 }
 
 void 
+RecursiveNodeRender(unsigned int *Pixel, int Width, int Height, call_stack_entry *Node, int LocX, int LocY)
+{
+	box_config BoxConfig = {};
+
+	BoxConfig.Width = 100;
+	BoxConfig.Height = 100;
+	BoxConfig.X = LocX;
+	BoxConfig.Y = LocY;
+
+	RenderBox(Pixel, Width, Height, &BoxConfig);
+	if (Node->NumChildren) 
+	{
+		for (int ChildIndex = 0;
+				ChildIndex < Node->NumChildren;
+				++ChildIndex)
+		{
+			RecursiveNodeRender(Pixel, Width, Height, Node->Children[ChildIndex], LocX + (ChildIndex * 120), LocY + 120);
+		}
+	}
+}
+
+void 
 RenderCallTree(unsigned int *Pixel, int Width, int Height, call_stack_entry *CallStack, int NumNodes)
 {
 	call_stack_entry *Root = MakeCallTree(CallStack, NumNodes);
@@ -191,12 +213,9 @@ RenderCallTree(unsigned int *Pixel, int Width, int Height, call_stack_entry *Cal
 		*PixelCursor++ = 0xffaad000;
 	}
 
-	box_config BoxConfig = {};
-	BoxConfig.X = 100;
-	BoxConfig.Y = 100;
-	BoxConfig.Width = 100;
-	BoxConfig.Height = 100;
-	RenderBox(Pixel, Width, Height, &BoxConfig);
+	int LocX = Width/2;
+	int LocY = 0;
+	RecursiveNodeRender(Pixel, Width, Height, Root, LocX, LocY);
 }
 
 bool
