@@ -21,12 +21,6 @@ export async function mount(rootEl) {
 function updateAndRender() {
 	ctx.clearRect(0, 0, windowWidth, windowHeight);
 	ctx.fillRect(0, 0, 100, 100);
-
-	/*
-	requestAnimationFrame(() => {
-		updateAndRender();
-	});
-	*/
 }
 
 function putString(memory, base, text) {
@@ -38,6 +32,30 @@ function putString(memory, base, text) {
 }
 
 async function loadRecursiveSolution() {
+	// 1 page is 64kb 
+	const TenMB = 1024 * 1024 * 10;
+	const NumPagesForBuffer = Math.ceil(TenMB / 64000); 
+	const memory = new WebAssembly.Memory({ initial: NumPagesForBuffer });
+	const res = await fetch("./recursive.wasm");	
+	const bytes = await res.arrayBuffer();
+	const { instance } = await WebAssembly.instantiate(bytes, {
+		env: {
+			memory
+		}
+	});
+
+	const view = new Uint8Array(memory.buffer);
+
+	let Base = instance.exports.__heap_base;
+	Base = putString(view, Base, "abcd");
+	Base = putString(view, Base, ".*");
+	const result = instance.exports.runMatch(
+		instance.exports.__heap_base
+	);
+	ctx.fillText("Result: " + result, 20, 20);
+}
+
+async function loadRecursiveSolutionWithCanvasBuffer() {
 	// 1 page is 64kb 
 	const BytesRequiredForBuffer = Math.ceil(canvas.width * canvas.height * 4);
 	const NumPagesForBuffer = Math.ceil(BytesRequiredForBuffer / 64000); 
@@ -55,8 +73,8 @@ async function loadRecursiveSolution() {
 	const view = new Uint8Array(memory.buffer);
 	// Reserve memory for imagedata
 	const Base = BufferStart + BytesRequiredForBuffer;
-	const newbase = putString(view, Base, "abcd");
-	putString(view, newbase, ".*");
+	const Newbase = putString(view, Base, "abcd");
+	putString(view, Newbase, ".*");
 	const result = instance.exports.runMatch(
 		BufferStart, canvas.width, canvas.height, Base
 	);

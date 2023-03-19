@@ -4,6 +4,8 @@ typedef unsigned int bool;
 #define false 0
 #define true 1
 
+
+
 unsigned int
 Len(char *String) 
 {
@@ -60,26 +62,60 @@ isMatch(char *Input, char *Pattern)
 	}
 }
 
-void
-Print(unsigned char *Buffer, int Width, int Height)
+bool
+isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart)
 {
-	unsigned int *Pixel = (unsigned int *)Buffer;
-	for (int Index = 0; Index < Width * Height; ++Index) 
+	if (InputStart > Len(Input)) 
 	{
-		// AABBGGRR
-		*Pixel++ = 0xffaad000;
+		InputStart = Len(Input);
+	}
+
+	if (PatternStart > Len(Pattern)) 
+	{
+		PatternStart = Len(Pattern);
+	}
+
+	if (InputStart == Len(Input) && PatternStart == Len(Pattern))
+	{
+		return true;
+	}
+	else if ((Len(Pattern) - PatternStart) >= 2 && *(Pattern + PatternStart + 1) == '*') 
+	{
+		bool StarMatchIsSkipped = isMatchIndexBased(Input, InputStart, Pattern, PatternStart + 2);
+		if (StarMatchIsSkipped) 
+		{
+			return true;
+		}
+
+		bool FirstMatch = (*(Input + InputStart) != '\0') && (
+				(*(Pattern + PatternStart)  == *(Input + InputStart)) || (*(Pattern + PatternStart) == '.')
+			);
+		bool StarMatchIsUsed = (FirstMatch && 
+				isMatchIndexBased(Input, InputStart + 1, Pattern, PatternStart)
+			);
+			
+		return StarMatchIsUsed;
+	}
+	else if ((*(Input + InputStart) != '\0') && (
+				(*(Pattern + PatternStart) == *(Input + InputStart)) || (*(Pattern + PatternStart) == '.')
+			)
+		)
+	{
+		return isMatchIndexBased(Input, InputStart + 1, Pattern, PatternStart + 1);
+	}
+	else
+	{
+		return false;
 	}
 }
 
 bool
-runMatch(unsigned char *Buffer, int Width, int Height, char *Input)
+runMatch(char *Input)
 {
 	char *Pattern = Input;
 	while (*(++Pattern) != '\0') {}
 	Pattern += 1;	
-	bool Result = isMatch(Input, Pattern);
-
-	Print(Buffer, Width, Height);
+	bool Result = isMatchIndexBased(Input, 0, Pattern, 0);
 
 	return Result;
 }
@@ -93,5 +129,16 @@ main(int NumArgs, char **Args)
 	bool Result = isMatch(Input, Pattern);
 	printf("Answer: %d\n", Result);
 	return 0;
+}
+
+void
+Print(unsigned char *Buffer, int Width, int Height)
+{
+	unsigned int *Pixel = (unsigned int *)Buffer;
+	for (int Index = 0; Index < Width * Height; ++Index) 
+	{
+		// AABBGGRR
+		*Pixel++ = 0xffaad000;
+	}
 }
 */
