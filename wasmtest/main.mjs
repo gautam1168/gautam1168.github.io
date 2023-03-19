@@ -3,6 +3,9 @@ let ctx;
 let windowWidth;
 let windowHeight;
 
+let controlPanel;
+let wasmInterface;
+
 export async function mount(rootEl) {
 	canvas = document.createElement("canvas");		
 	windowWidth = window.innerWidth;
@@ -13,9 +16,46 @@ export async function mount(rootEl) {
 
 	ctx = canvas.getContext("2d");
 
-	await loadRecursiveSolution();
+	appendControlPanel(rootEl);
 
-	// updateAndRender();
+	await loadRecursiveSolution();
+}
+
+function appendControlPanel(rootEl) {
+	const panelRoot = document.createElement("div");
+	panelRoot.setAttribute("style", `
+		display: flex;
+		flex-direction: column;
+		position: fixed;
+		top: 0;
+		right: 0;
+		width: 300px;
+		height: 500px;
+		background: #ffffff9e;
+	`);
+	panelRoot.innerHTML = `
+		<div>
+			<input id="string-input" type="text" placeholder="String...">
+		</div>
+		<div>
+			<input id="pattern-input" type="text" placeholder="Pattern...">
+		</div>
+	`;
+	rootEl.appendChild(panelRoot);
+
+	controlPanel = {
+		panelRoot,
+		stringInput: document.querySelector("input#string-input"),
+		patternInput: document.querySelector("input#pattern-input"),
+	};
+
+	controlPanel.stringInput.addEventListener("input", (ev) => {
+		evaluateInputs();
+	});
+
+	controlPanel.patternInput.addEventListener("input", (ev) => {
+		evaluateInputs();
+	});
 }
 
 function updateAndRender() {
@@ -49,16 +89,36 @@ async function loadRecursiveSolution() {
 
 	const BufferStart = instance.exports.__heap_base;
 	// Reserve memory for imagedata
-	let Base = BufferStart + BytesRequiredForBuffer;
-	let DataStart = Base;
-	Base = putString(view, Base, "abbcd");
-	Base = putString(view, Base, ".*.d");
-	const result = instance.exports.runMatch(
-		BufferStart, canvas.width, canvas.height, DataStart
+	let DataStart = BufferStart + BytesRequiredForBuffer;
+	controlPanel.stringInput.value = "abbcd";
+	controlPanel.patternInput.value = ".*.d";
+
+	wasmInterface = {
+		view,
+		instance,
+		dataStart: DataStart
+	};
+
+	evaluateInputs();
+}
+
+function evaluateInputs() {
+	const StringInput = controlPanel.stringInput.value;
+	const PatternInput = controlPanel.patternInput.value;
+
+	let Base = wasmInterface.dataStart;
+	Base = putString(wasmInterface.view, Base, StringInput);
+	Base = putString(wasmInterface.view, Base, PatternInput);
+
+	const BufferStart = wasmInterface.instance.exports.__heap_base;
+	const result = wasmInterface.instance.exports.runMatch(
+		BufferStart,
+		canvas.width,
+		canvas.height,
+		wasmInterface.dataStart
 	);
 
-	const buffer = new Uint8ClampedArray(view.buffer, BufferStart, canvas.width * canvas.height * 4); 
+	const buffer = new Uint8ClampedArray(wasmInterface.view.buffer, BufferStart, canvas.width * canvas.height * 4); 
 	const imageData = new ImageData(buffer, canvas.width, canvas.height);
 	ctx.putImageData(imageData, 0, 0);
 }
-
