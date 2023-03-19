@@ -74,7 +74,7 @@ function putString(memory, base, text) {
 function putFontTextureInBuffer(view, start) {
 	const ofCanvas = new OffscreenCanvas(40, 40);	
 	const ofCtx = ofCanvas.getContext("2d");
-	const characters = "abcdefghijklmnopqrstuvwxyz0123456789.*";
+	const characters = "abcdefghijklmnopqrstuvwxyz0123456789.* ";
 	for (let i = 0; i < characters.length; ++i) {
 		const character = characters[i];
 		const measure = ofCtx.measureText(character);

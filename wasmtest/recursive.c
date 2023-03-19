@@ -13,6 +13,13 @@ typedef struct call_stack_entry
 	struct call_stack_entry *Children[3];
 } call_stack_entry;
 
+typedef struct font_pixels 
+{
+	int Width;
+	int Height;
+	unsigned int *Pixels;
+} font_pixels;
+
 unsigned int
 Len(char *String) 
 {
@@ -139,7 +146,7 @@ typedef struct box_config
 } box_config;
 
 void
-RenderBox(unsigned int *Pixel, int Width, int Height, box_config *BoxConfig)
+RenderBox(unsigned int *Pixel, int Width, int Height, box_config *BoxConfig, unsigned int Color)
 {
 	for (int RowIndex = BoxConfig->Y; 
 			RowIndex < BoxConfig->Y + BoxConfig->Height; 
@@ -151,7 +158,7 @@ RenderBox(unsigned int *Pixel, int Width, int Height, box_config *BoxConfig)
 				++ColIndex)
 		{
 			unsigned int *Pixel = Row + ColIndex;
-			*Pixel = 0xff000000;
+			*Pixel = Color;
 		}
 	}
 }
@@ -179,7 +186,7 @@ MakeCallTree(call_stack_entry *Entries, int NumEntries)
 }
 
 void 
-RecursiveNodeRender(unsigned int *Pixel, int Width, int Height, call_stack_entry *Node, int LocX, int LocY)
+RecursiveNodeRender(unsigned int *Pixel, int Width, int Height, call_stack_entry *Node, int LocX, int LocY, unsigned int Color)
 {
 	box_config BoxConfig = {};
 
@@ -188,42 +195,59 @@ RecursiveNodeRender(unsigned int *Pixel, int Width, int Height, call_stack_entry
 	BoxConfig.X = LocX;
 	BoxConfig.Y = LocY;
 
-	RenderBox(Pixel, Width, Height, &BoxConfig);
+	RenderBox(Pixel, Width, Height, &BoxConfig, Color);
 	if (Node->NumChildren) 
 	{
 		for (int ChildIndex = 0;
 				ChildIndex < Node->NumChildren;
 				++ChildIndex)
 		{
-			RecursiveNodeRender(Pixel, Width, Height, Node->Children[ChildIndex], LocX + (ChildIndex * 120), LocY + 120);
+			RecursiveNodeRender(Pixel, Width, Height, Node->Children[ChildIndex], LocX + (ChildIndex * 120), LocY + 120, Color);
 		}
 	}
 }
 
 void 
-RenderCallTree(unsigned int *Pixel, int Width, int Height, call_stack_entry *CallStack, int NumNodes)
+RenderWord(unsigned int *Pixel, font_pixels *Font, int Width, int Height, char *Word)
 {
+	int WordLength = Len(Word);
+	unsigned int *BufferPixelIndex = Pixel + (Width * 50) + 20;
+	unsigned int *CharacterPixels = Font->Pixels;
+	for (int RowIndex = 0; 
+			RowIndex < Font->Height;
+			++RowIndex)
+	{
+		BufferPixelIndex += (Width + 20 - Font->Width);
+		for (int ColIndex = 0;
+				ColIndex < Font->Width;
+				++ColIndex)
+		{
+			*BufferPixelIndex++ = *CharacterPixels++;	
+		}
+	}
+}
+
+void 
+RenderCallTree(unsigned int *Pixel, font_pixels *Font, int Width, int Height, call_stack_entry *CallStack, int NumNodes, bool Result)
+{
+	// AABBGGRR
+	unsigned int Color = Result ?  0xff000000: 0xff0f26fa;
 	call_stack_entry *Root = MakeCallTree(CallStack, NumNodes);
 
 	unsigned int *PixelCursor = Pixel;
 	long NumPixels = Width * Height;
 	while (NumPixels--) 
 	{
-		// AABBGGRR
 		*PixelCursor++ = 0xffaad000;
 	}
 
 	int LocX = Width/2;
 	int LocY = 0;
-	RecursiveNodeRender(Pixel, Width, Height, Root, LocX, LocY);
+	RecursiveNodeRender(Pixel, Width, Height, Root, LocX, LocY, Color);
+	
+	char Word[] = "Some Text\0";
+	RenderWord(Pixel, Font, Width, Height, Word);
 }
-
-typedef struct font_pixels 
-{
-	int Width;
-	int Height;
-	unsigned int *Pixels;
-} font_pixels;
 
 bool
 runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
@@ -232,9 +256,9 @@ runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 	call_stack_entry CallStack[128];
 
 	unsigned char *DataStart  = ((unsigned char *)Pixels) + (Width * Height * 4);
-	font_pixels Characters[38];
+	font_pixels Characters[39];
 	for (int CharacterIndex = 0;
-			CharacterIndex < 38;
+			CharacterIndex < 39;
 			++CharacterIndex)
 	{
 		font_pixels *Character = Characters + CharacterIndex;
@@ -248,7 +272,7 @@ runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 	while (*(++Pattern) != '\0') {}
 	Pattern += 1;	
 	bool Result = isMatchIndexBased(Input, 0, Pattern, 0, -1, &UsedEntries, CallStack);
-	RenderCallTree(Pixels, Width, Height, CallStack, UsedEntries + 1);
+	RenderCallTree(Pixels, Characters, Width, Height, CallStack, UsedEntries + 1, Result);
 
 	return Result;
 }
