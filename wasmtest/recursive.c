@@ -4,7 +4,14 @@ typedef unsigned int bool;
 #define false 0
 #define true 1
 
-
+typedef struct call_stack_entry 
+{
+	int InputIndex;
+	int PatternIndex;
+	int CallerIndex;
+	int NumChildren;
+	struct call_stack_entry *Children;
+} call_stack_entry;
 
 unsigned int
 Len(char *String) 
@@ -63,8 +70,15 @@ isMatch(char *Input, char *Pattern)
 }
 
 bool
-isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart)
+isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart, int CallerIndex, int *UsedEntries, call_stack_entry *Mem)
 {
+	call_stack_entry *Entry = Mem + (*UsedEntries);
+	// Entry->Caller = Caller;
+	Entry->CallerIndex = CallerIndex;
+	Entry->InputIndex = InputStart;
+	Entry->PatternIndex = PatternStart;
+	int SelfIndex = *UsedEntries;
+
 	if (InputStart > Len(Input)) 
 	{
 		InputStart = Len(Input);
@@ -81,7 +95,8 @@ isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart)
 	}
 	else if ((Len(Pattern) - PatternStart) >= 2 && *(Pattern + PatternStart + 1) == '*') 
 	{
-		bool StarMatchIsSkipped = isMatchIndexBased(Input, InputStart, Pattern, PatternStart + 2);
+		*UsedEntries = (*UsedEntries) + 1;
+		bool StarMatchIsSkipped = isMatchIndexBased(Input, InputStart, Pattern, PatternStart + 2, SelfIndex, UsedEntries, Mem);
 		if (StarMatchIsSkipped) 
 		{
 			return true;
@@ -90,8 +105,10 @@ isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart)
 		bool FirstMatch = (*(Input + InputStart) != '\0') && (
 				(*(Pattern + PatternStart)  == *(Input + InputStart)) || (*(Pattern + PatternStart) == '.')
 			);
+
+		*UsedEntries = (*UsedEntries) + 1;
 		bool StarMatchIsUsed = (FirstMatch && 
-				isMatchIndexBased(Input, InputStart + 1, Pattern, PatternStart)
+				isMatchIndexBased(Input, InputStart + 1, Pattern, PatternStart, SelfIndex, UsedEntries, Mem)
 			);
 			
 		return StarMatchIsUsed;
@@ -101,7 +118,8 @@ isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart)
 			)
 		)
 	{
-		return isMatchIndexBased(Input, InputStart + 1, Pattern, PatternStart + 1);
+		*UsedEntries = (*UsedEntries) + 1;
+		return isMatchIndexBased(Input, InputStart + 1, Pattern, PatternStart + 1, SelfIndex, UsedEntries, Mem);
 	}
 	else
 	{
@@ -109,13 +127,62 @@ isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart)
 	}
 }
 
-bool
-runMatch(char *Input)
+typedef struct box_config
 {
+	int X;
+	int Y;
+	int Width;
+	int Height;
+	int LineWidth;
+} box_config;
+
+void
+RenderBox(unsigned int *Pixel, int Width, int Height, box_config *BoxConfig)
+{
+	for (int RowIndex = BoxConfig->Y; 
+			RowIndex < BoxConfig->Y + BoxConfig->Height; 
+			++RowIndex)
+	{
+		unsigned int *Row = Pixel + (Width * RowIndex);
+		for (int ColIndex = BoxConfig->X; 
+				ColIndex < BoxConfig->X + BoxConfig->Width; 
+				++ColIndex)
+		{
+			unsigned int *Pixel = Row + ColIndex;
+			*Pixel = 0xff000000;
+		}
+	}
+}
+
+void 
+RenderCallTree(unsigned int *Pixel, int Width, int Height, call_stack_entry *CallStack, int NumNodes)
+{
+	unsigned int *PixelCursor = Pixel;
+	long NumPixels = Width * Height;
+	while (NumPixels--) 
+	{
+		// AABBGGRR
+		*PixelCursor++ = 0xffaad000;
+	}
+
+	box_config BoxConfig = {};
+	BoxConfig.X = 100;
+	BoxConfig.Y = 100;
+	BoxConfig.Width = 100;
+	BoxConfig.Height = 100;
+	RenderBox(Pixel, Width, Height, &BoxConfig);
+}
+
+bool
+runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
+{
+	int UsedEntries = 0;
+	call_stack_entry CallStack[1024];
 	char *Pattern = Input;
 	while (*(++Pattern) != '\0') {}
 	Pattern += 1;	
-	bool Result = isMatchIndexBased(Input, 0, Pattern, 0);
+	bool Result = isMatchIndexBased(Input, 0, Pattern, 0, -1, &UsedEntries, CallStack);
+	RenderCallTree(Pixels, Width, Height, CallStack, UsedEntries + 1);
 
 	return Result;
 }
