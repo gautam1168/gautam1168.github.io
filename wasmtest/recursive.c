@@ -6,8 +6,8 @@ typedef unsigned int bool;
 
 typedef struct call_stack_entry 
 {
-	int InputIndex;
-	int PatternIndex;
+	char *InputString;
+	char *PatternString;
 	int CallerIndex;
 	int NumChildren;
 	struct call_stack_entry *Children[3];
@@ -84,8 +84,8 @@ isMatchIndexBased(char *Input, int InputStart, char *Pattern, int PatternStart, 
 	call_stack_entry *Entry = Mem + (*UsedEntries);
 	// Entry->Caller = Caller;
 	Entry->CallerIndex = CallerIndex;
-	Entry->InputIndex = InputStart;
-	Entry->PatternIndex = PatternStart;
+	Entry->InputString = Input + InputStart;
+	Entry->PatternString = Pattern + PatternStart;
 	Entry->NumChildren = 0;
 	int SelfIndex = *UsedEntries;
 
@@ -188,34 +188,10 @@ MakeCallTree(call_stack_entry *Entries, int NumEntries)
 }
 
 void 
-RecursiveNodeRender(unsigned int *Pixel, int Width, int Height, call_stack_entry *Node, int LocX, int LocY, unsigned int Color)
-{
-	box_config BoxConfig = {};
-
-	BoxConfig.Width = 100;
-	BoxConfig.Height = 100;
-	BoxConfig.X = LocX;
-	BoxConfig.Y = LocY;
-
-	RenderBox(Pixel, Width, Height, &BoxConfig, Color);
-	if (Node->NumChildren) 
-	{
-		for (int ChildIndex = 0;
-				ChildIndex < Node->NumChildren;
-				++ChildIndex)
-		{
-			RecursiveNodeRender(Pixel, Width, Height, Node->Children[ChildIndex], LocX + (ChildIndex * 120), LocY + 120, Color);
-		}
-	}
-}
-
-void 
-RenderWord(unsigned int *Pixel, font_pixels *Font, int Width, int Height, char *Word)
+RenderWord(unsigned int *Pixel, font_pixels *Font, int Width, int Height, char *Word, int XOffset, int YOffset)
 {
 	int WordLength = Len(Word);
 	unsigned int *BufferPixelIndex;
-	int XOffset = 20;
-	int YOffset = 20;
 
 	for (int i = 0; i < WordLength; ++i) 
 	{
@@ -242,6 +218,31 @@ RenderWord(unsigned int *Pixel, font_pixels *Font, int Width, int Height, char *
 }
 
 void 
+RecursiveNodeRender(unsigned int *Pixel, font_pixels *Font, int Width, int Height, call_stack_entry *Node, int LocX, int LocY, unsigned int Color)
+{
+	box_config BoxConfig = {};
+
+	BoxConfig.Width = 100;
+	BoxConfig.Height = 100;
+	BoxConfig.X = LocX;
+	BoxConfig.Y = LocY;
+
+	RenderBox(Pixel, Width, Height, &BoxConfig, Color);
+	// char Word[] = "some text\0";
+	RenderWord(Pixel, Font, Width, Height, Node->InputString, LocX, LocY);
+	RenderWord(Pixel, Font, Width, Height, Node->PatternString, LocX, LocY + 25);
+	if (Node->NumChildren) 
+	{
+		for (int ChildIndex = 0;
+				ChildIndex < Node->NumChildren;
+				++ChildIndex)
+		{
+			RecursiveNodeRender(Pixel, Font, Width, Height, Node->Children[ChildIndex], LocX + (ChildIndex * 120), LocY + 120, Color);
+		}
+	}
+}
+
+void 
 RenderCallTree(unsigned int *Pixel, font_pixels *Font, int Width, int Height, call_stack_entry *CallStack, int NumNodes, bool Result)
 {
 	// AABBGGRR
@@ -257,10 +258,7 @@ RenderCallTree(unsigned int *Pixel, font_pixels *Font, int Width, int Height, ca
 
 	int LocX = Width/2;
 	int LocY = 0;
-	RecursiveNodeRender(Pixel, Width, Height, Root, LocX, LocY, Color);
-	
-	char Word[] = "some text\0";
-	RenderWord(Pixel, Font, Width, Height, Word);
+	RecursiveNodeRender(Pixel, Font, Width, Height, Root, LocX, LocY, Color);
 }
 
 bool
