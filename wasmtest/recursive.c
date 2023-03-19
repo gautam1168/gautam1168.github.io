@@ -266,6 +266,15 @@ runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 {
 	int UsedEntries = 0;
 	call_stack_entry CallStack[128];
+	int EntryIndex = 0;
+	while (EntryIndex < 128)
+	{
+		CallStack[EntryIndex].InputString = "";
+		CallStack[EntryIndex].PatternString = "";
+		CallStack[EntryIndex].CallerIndex = -1;
+		CallStack[EntryIndex].NumChildren = 0;
+		EntryIndex++;
+	}
 
 	char FontGlyphs[] = "abcdefghijklmnopqrstuvwxyz0123456789.* ";
 
