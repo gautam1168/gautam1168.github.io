@@ -1,0 +1,25 @@
+<html>
+	<head>
+		<title>Image Container</title>
+		<link rel="stylesheet" href="./main.css">
+	</head>
+	<body>
+		<div>
+			<input id="imagelink" type="text" placeholder="imagelink"/>
+			<div id="previews"></div>
+		</div>
+		<script type="module">
+			import { mount } from "./main.mjs";
+			const rootEl = document.querySelector("#root");
+			const previewsEl = document.querySelector("#previews");
+			const inputElement = document.querySelector("#imagelink");
+			inputElement.value = "https://d6d4ismr40iw.cloudfront.net/event%2Feea00a13-dbe4-4e55-b015-6120c305ab42%2Fresources%2FxORkoAavQcegQZG3hBLs_radar%20irl.png"
+			// inputElement.value = "https://d6d4ismr40iw.cloudfront.net/event%2Faac52a71-986a-4dad-9865-c6872d8cd05d%2Fresources%2FNror32fQwi6G6KXrXveA_Zscaler-CrowdStrike-BTP-event-page-PDT.jpg"
+			mount(rootEl, previewsEl, inputElement.value);
+
+			inputElement.addEventListener("change", ev => {
+				mount(rootEl, previewsEl, ev.target.value);
+			})
+		</script>
+	</body>
+</html>
