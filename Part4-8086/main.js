@@ -3,14 +3,15 @@ async function onFile(ev, view, instance) {
   const file = ev.target.files[0];
   const buffer = await file.arrayBuffer();
   const filebytes = new Uint8Array(buffer);
-  for (let i = 0; i < filebytes.length; ++i) {
-    view[offset + i] = filebytes[i];
-  }
+  view.set(filebytes, offset);
 
   const MaxMemory = BigInt(view.length - offset);
-  const result = instance.exports.Entry(offset, filebytes.length, MaxMemory);
+  const resultOffset = instance.exports.Entry(offset, filebytes.length, MaxMemory);
 
-  const outputView = view.slice(offset + (1 << 20), offset + (1 << 20) + result + 1);
+  const wordExtractorView = new Uint32Array(view.buffer, resultOffset, 1);
+  const numBytesInResult = wordExtractorView[0];
+
+  const outputView = new Uint8Array(view.buffer, resultOffset + 4, numBytesInResult - 4);
   const outputLog = String.fromCharCode.apply(null, outputView);
 
   const input = document.querySelector("#input");

@@ -27,20 +27,20 @@ async function loadLibrary() {
       view[instance.exports.__heap_base + i] = sourceBytes[i];
     }
 
+    const offset = instance.exports.__heap_base;
+    const resultOffset = offset + (1 << 20);
+
     // call
-    instance.exports.Sim86_Decode8086Instruction(sourceBytes.length, instance.exports.__heap_base, 0);
+    instance.exports.Sim86_Decode8086Instruction(sourceBytes.length, offset, resultOffset);
 
     // decode
-    const resultBytes = view.slice(instance.exports.__heap_base + (1 << 20));
-
-    const wordExtractor = new Uint32Array(resultBytes.buffer);
+    const wordExtractor = new Uint32Array(view.buffer, resultOffset);
 
     const result = {
       Address: wordExtractor[0], // u32
       Size: wordExtractor[1], //u32
-      operation_type: wordExtractor[2],
+      Op: wordExtractor[2],
       Flags: wordExtractor[3], //u32
-      SegmentOverride: wordExtractor[4],
       Operands: [
         {
           Type: 0, // 0: None, 1: Register, 2: Memory, 3: Immediate
@@ -54,19 +54,22 @@ async function loadLibrary() {
           Register: null,
           Address: null
         }
-      ]
+      ],
+      SegmentOverride: null
     };
 
-    let nextWordIndex = 5;
+    let nextWordIndex = 4;
     for (let i = 0; i < 2; ++i) {
       const Operand = result.Operands[i];
       const OperandType = wordExtractor[nextWordIndex++];
+      Operand.Type = OperandType;
       if (OperandType == 1) {
         Operand.Register = {
           Index: wordExtractor[nextWordIndex++],
           Offset: wordExtractor[nextWordIndex++],
           Count: wordExtractor[nextWordIndex++],
         };
+        nextWordIndex += 8;
       } else if (OperandType == 2) {
         Operand.Address = {
           ExplicitSegment: wordExtractor[nextWordIndex++],
@@ -96,9 +99,19 @@ async function loadLibrary() {
           Value: wordExtractor[nextWordIndex++],
           Flags: wordExtractor[nextWordIndex++],
         };
+        nextWordIndex += 9;
       }
     }
 
+    result.SegmentOverride = wordExtractor[nextWordIndex];
+    return result;
+  }
+
+  function readStringFromOffset(view, offset) {
+    const wordExtractor = new Uint32Array(view.buffer, offset);
+    const Length = wordExtractor[0];
+    const resultBytes = new Uint8Array(view.buffer, offset + 4);
+    const result = String.fromCharCode.apply(null, resultBytes.slice(0, Length));	
     return result;
   }
 
@@ -107,21 +120,19 @@ async function loadLibrary() {
     wordView[0] = Index;
     wordView[1] = Offset;
     wordView[2] = Count;
-    const Length = instance.exports.Sim86_RegisterNameFromOperandWasm(
-      instance.exports.__heap_base, MaxMemory
+    const resultOffset = instance.exports.Sim86_RegisterNameFromOperandWasm(
+      instance.exports.__heap_base
     );
-    const resultBytes = view.slice(instance.exports.__heap_base + (1 << 20));
-    const result = String.fromCharCode.apply(null, resultBytes.slice(0, Length));	
-    return result;
+
+    return readStringFromOffset(view, resultOffset);
   }
 
   function Sim86_MnemonicFromOperationType(Type) {
-    const Length = instance.exports.Sim86_MnemonicFromOperationTypeWasm(
-      Type, instance.exports.__heap_base, MaxMemory
+    const resultOffset = instance.exports.Sim86_MnemonicFromOperationTypeWasm(
+      Type, instance.exports.__heap_base
     )   
-    const resultBytes = view.slice(instance.exports.__heap_base + (1 << 20));
-    const result = String.fromCharCode.apply(null, resultBytes.slice(0, Length));	
-    return result;
+
+    return readStringFromOffset(view, resultOffset);
   }
 
   function Sim86_Get8086InstructionTable() {
@@ -152,12 +163,17 @@ async function loadLibrary() {
     };
   }
 
+  function TriggerTrap() {
+    instance.exports.TriggerTrap();
+  }
+
   return {
     Sim86_GetVersion,
     Sim86_Decode8086Instruction,
     Sim86_RegisterNameFromOperand,
     Sim86_MnemonicFromOperationType,
-    Sim86_Get8086InstructionTable
+    Sim86_Get8086InstructionTable,
+    TriggerTrap
   };
 }
 
