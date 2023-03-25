@@ -108,10 +108,10 @@ async function loadLibrary() {
   }
 
   function readStringFromOffset(view, offset) {
-    const wordExtractor = new Uint32Array(view.buffer, offset);
-    const Length = wordExtractor[0];
-    const resultBytes = new Uint8Array(view.buffer, offset + 4);
-    const result = String.fromCharCode.apply(null, resultBytes.slice(0, Length));	
+    const result = String.fromCharCode.apply(null, 
+      view.slice(offset, view.indexOf(0, offset))
+    );
+
     return result;
   }
 
@@ -120,45 +120,52 @@ async function loadLibrary() {
     wordView[0] = Index;
     wordView[1] = Offset;
     wordView[2] = Count;
-    const resultOffset = instance.exports.Sim86_RegisterNameFromOperandWasm(
+    const resultOffset = instance.exports.Sim86_RegisterNameFromOperand(
       instance.exports.__heap_base
     );
 
-    return readStringFromOffset(view, resultOffset);
+    const result = readStringFromOffset(view, resultOffset);
+    return result;
   }
 
   function Sim86_MnemonicFromOperationType(Type) {
-    const resultOffset = instance.exports.Sim86_MnemonicFromOperationTypeWasm(
-      Type, instance.exports.__heap_base
-    )   
+    const resultOffset = instance.exports.Sim86_MnemonicFromOperationType(Type);   
 
-    return readStringFromOffset(view, resultOffset);
+    const result = readStringFromOffset(view, resultOffset);
+    return result;
   }
 
   function Sim86_Get8086InstructionTable() {
-    instance.exports.Sim86_Get8086InstructionTableWasm(instance.exports.__heap_base, MaxMemory);		
-
-    const outputView = view.slice(instance.exports.__heap_base + (1 << 20));
-    const wordView = new Uint32Array(outputView.buffer);
+    instance.exports.Sim86_Get8086InstructionTable(instance.exports.__heap_base);		
+    const wordView = new Uint32Array(view.buffer, instance.exports.__heap_base);
+    const EncodingsOffset = wordView[0];
+    const EncodingCount = wordView[1];
+    const MaxInstructionByteCount = wordView[2];
 
     const getEncoding = function (index) {
-      const EncodingIndex = 2 * index;
-      const Bits = new Uint8Array(this.Encodings.buffer, EncodingIndex + 1);
-      return {
-        Op: this.Encodings[EncodingIndex],
-        Bits: {
-          Usage: Bits[0],
-          BitCount: Bits[1],
-          Shift: Bits[2],
-          Value: Bits[3]
-        }
+      const Encoding = new Uint8Array(this.Encodings.buffer, index * (4 + 64));
+      const result = {
+        Op: Encoding[0],
+        Bits: new Array(16)
       };
+      
+      let BitsUsageIndex = (index * (4 + 64)) + 4;
+      for (let i = 0; i < 16; ++i) {
+        result.Bits[i] = {
+          Usage: Encoding[BitsUsageIndex++],
+          BitCount: Encoding[BitsUsageIndex++],
+          Shift: Encoding[BitsUsageIndex++],
+          Value: Encoding[BitsUsageIndex++]
+        };
+      }
+
+      return result;
     }
 
     return {
-      Encodings: new Uint32Array(wordView.buffer, 2 * 4),
-      EncodingCount: wordView[0],
-      MaxInstructionByteCount: wordView[1],
+      Encodings: view.slice(EncodingsOffset, EncodingsOffset + (EncodingCount * (4 + 16 * 4))),
+      EncodingCount,
+      MaxInstructionByteCount,
       getEncoding
     };
   }
