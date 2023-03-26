@@ -21,6 +21,10 @@ let registers = {
     return this.A >> 8;
   }
 };
+let program = {
+  asm: [],
+  current: 0
+};
 
 export async function main() {
   renderRegisters();
@@ -47,17 +51,30 @@ async function loadBinary(ev) {
 }
 
 function prepareForExecute(asm) {
+  program.asm = asm;
+  program.current = 0;
   const stepper = document.querySelector("#stepper");  
   stepper.addEventListener("click", () => {
-    executeInstruction(asm.instruction);
+    executeInstruction(program.asm[program.current++].instruction);
     renderRegisters();
+
+    const instructions = document.querySelectorAll("#instruction");
+    instructions.forEach((inst, i) => {
+      if (i == program.current) {
+        inst.classList.add("selected");
+      } else {
+        inst.classList.remove("selected");
+      }
+    });
   });
 }
 
 function renderAsm(asm) {
   const display = document.querySelector("#display #asm");
 
-  display.innerText = asm.serialized;
+  display.innerHTML = asm.map((it, i) => {
+    return `<div id="instruction" class="${i == 0 ? 'selected':''}">${it.serialized}</div>`;
+  }).join("")
 }
 
 function renderRawBytes(fileBytes) {
@@ -90,10 +107,10 @@ function generateAsm(fileBytes) {
     DestOperandAsString = simLib.Sim86_RegisterNameFromOperand(DestOperand.Register);
   }
 
-  return {
+  return [{
     serialized: `${OpName} ${DestOperandAsString}, ${SourceOperandAsString}`,
     instruction
-  };
+  }];
 }
 
 function executeInstruction(Instruction) {

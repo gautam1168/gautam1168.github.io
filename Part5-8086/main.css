@@ -26,3 +26,8 @@
   flex-grow: 1;
   border: solid 1px;
 }
+
+#instruction.selected {
+  border: solid 1px green;
+  background: #9ee99e;
+}
