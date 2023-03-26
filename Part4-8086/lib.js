@@ -170,17 +170,12 @@ async function loadLibrary() {
     };
   }
 
-  function TriggerTrap() {
-    instance.exports.TriggerTrap();
-  }
-
   return {
     Sim86_GetVersion,
     Sim86_Decode8086Instruction,
     Sim86_RegisterNameFromOperand,
     Sim86_MnemonicFromOperationType,
     Sim86_Get8086InstructionTable,
-    TriggerTrap
   };
 }
 

@@ -36,7 +36,7 @@ export async function main() {
   };
 
   const { instance } = await WebAssembly.instantiateStreaming(
-    fetch("./sim8086.wasm"), importObject
+    fetch("./sim8086-test.wasm"), importObject
   );
 
   const version = instance.exports.Sim86_GetVersion();
