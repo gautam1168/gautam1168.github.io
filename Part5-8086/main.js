@@ -119,11 +119,15 @@ export async function main() {
 function connectInput() {
   const chooser = document.querySelector("input#chooser");
   chooser.addEventListener("change", loadBinary);
-  /*
+
   document.addEventListener("keydown", (ev) => {
-    stepProgram()
+    if (ev.ctrlKey && ev.keyCode == 121) {
+      stepProgram()
+    }
   });
-  */
+
+  const stepper = document.querySelector("#stepper");  
+  stepper.addEventListener("click", stepProgram);
 }
 
 function stepProgram() {
@@ -156,12 +160,6 @@ async function loadBinary(ev) {
 function prepareForExecute(asm) {
   program.asm = asm;
   program.current = 0;
-  const stepper = document.querySelector("#stepper");  
-  const btn = document.createElement("button");
-  btn.innerText = "Step";
-  stepper.innerHTML = "";
-  stepper.appendChild(btn);
-  btn.addEventListener("click", stepProgram);
 }
 
 function renderAsm(asm) {
