@@ -1,13 +1,6 @@
 let simLib;
 let registers = {
   A: 0x0,
-  B: 0x0,
-  C: 0x0,
-  D: 0x0,
-  SP: 0x0,
-  BP: 0x0,
-  SI: 0x0,
-  DI: 0x0,
   get AX() {
     return this.A;
   },
@@ -19,8 +12,57 @@ let registers = {
   },
   get AH() {
     return this.A >> 8;
-  }
+  },
+
+  B: 0x0,
+  get BX() {
+    return this.B;
+  },
+  set BX(val) {
+    this.B = val;
+  },
+  get BL() {
+    return this.B & 0xff;
+  },
+  get BH() {
+    return this.B >> 8;
+  },
+
+  C: 0x0,
+  get CX() {
+    return this.C;
+  },
+  set CX(val) {
+    this.C = val;
+  },
+  get CL() {
+    return this.C & 0xff;
+  },
+  get CH() {
+    return this.C >> 8;
+  },
+
+  D: 0x0,
+  get DX() {
+    return this.D;
+  },
+  set DX(val) {
+    this.D = val;
+  },
+  get DL() {
+    return this.D & 0xff;
+  },
+  get DH() {
+    return this.D >> 8;
+  },
+
+  SP: 0x0,
+  BP: 0x0,
+  SI: 0x0,
+  DI: 0x0,
+  
 };
+
 let program = {
   asm: [],
   current: 0
@@ -89,28 +131,39 @@ function renderRawBytes(fileBytes) {
 }
 
 function generateAsm(fileBytes) {
-  const instruction = simLib.Sim86_Decode8086Instruction(fileBytes);
-  const OpName = simLib.Sim86_MnemonicFromOperationType(instruction.Op);
-  const SourceOperand = instruction.Operands[1];
-  const DestOperand = instruction.Operands[0];
-  let SourceOperandAsString, DestOperandAsString;
+  const result = [];
+  
+  let bytesLeft = fileBytes.length;
+  let startOffset = 0;
 
-  if (SourceOperand.Immediate) {
-    SourceOperandAsString = SourceOperand.Immediate.Value;
-  } else if (SourceOperand.Register) {
-    SourceOperandAsString = simLib.Sim86_RegisterNameFromOperand(SourceOperand.Register);
+  while (bytesLeft) {
+    const instruction = simLib.Sim86_Decode8086Instruction(new Uint8Array(fileBytes.buffer, startOffset));
+    const OpName = simLib.Sim86_MnemonicFromOperationType(instruction.Op);
+    const SourceOperand = instruction.Operands[1];
+    const DestOperand = instruction.Operands[0];
+    let SourceOperandAsString, DestOperandAsString;
+
+    if (SourceOperand.Immediate) {
+      SourceOperandAsString = SourceOperand.Immediate.Value;
+    } else if (SourceOperand.Register) {
+      SourceOperandAsString = simLib.Sim86_RegisterNameFromOperand(SourceOperand.Register);
+    }
+
+    if (DestOperand.Immediate) {
+      DestOperandAsString = DestOperand.Immediate.Value;
+    } else if (DestOperand.Register) {
+      DestOperandAsString = simLib.Sim86_RegisterNameFromOperand(DestOperand.Register);
+    }
+
+    result.push({
+      serialized: `${OpName} ${DestOperandAsString}, ${SourceOperandAsString}`,
+      instruction
+    });
+
+    bytesLeft -= instruction.Size;
+    startOffset += instruction.Size;
   }
-
-  if (DestOperand.Immediate) {
-    DestOperandAsString = DestOperand.Immediate.Value;
-  } else if (DestOperand.Register) {
-    DestOperandAsString = simLib.Sim86_RegisterNameFromOperand(DestOperand.Register);
-  }
-
-  return [{
-    serialized: `${OpName} ${DestOperandAsString}, ${SourceOperandAsString}`,
-    instruction
-  }];
+  return result;
 }
 
 function executeInstruction(Instruction) {
