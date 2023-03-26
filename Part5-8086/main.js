@@ -129,132 +129,27 @@ function renderRegisters() {
         ${MakeBits(registers.A)}
       </div>
       <div id="B" class="reg">
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
+        ${MakeBits(registers.B)}
       </div>
       <div id="C" class="reg">
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
+        ${MakeBits(registers.C)}
       </div>
       <div id="D" class="reg">
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
+        ${MakeBits(registers.D)}
       </div>
     </div>
     <div id="pointergroup">
       <div id="SP" class="reg">
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
+        ${MakeBits(registers.SP)}
       </div>
       <div id="BP" class="reg">
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
+        ${MakeBits(registers.BP)}
       </div>
       <div id="SI" class="reg">
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
+        ${MakeBits(registers.SI)}
       </div>
       <div id="DI" class="reg">
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
-        <div class="bit"></div>
+        ${MakeBits(registers.DI)}
       </div>
     </div>
   `;
