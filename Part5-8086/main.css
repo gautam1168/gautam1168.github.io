@@ -24,11 +24,27 @@
   align-items: center;
 }
 
+#display #registers #datagroup,
+#display #registers #pointergroup,
+#display #registers #specialgroup
+{
+  border: solid 1px;
+  padding: 5px;
+}
+
 #display #registers .reg
 {
   border: solid 1px;
   width: 100%;
   display: flex;
+  margin-bottom: 10px;
+}
+
+#display #registers .humanreadable
+{
+  font-size: 12px;
+  font-weight: bold;
+  color: #646464;
 }
 
 #display #registers .bit

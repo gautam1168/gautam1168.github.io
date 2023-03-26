@@ -258,72 +258,105 @@ function renderRegisters() {
     <div id="datagroup">
       <div class="reglabelcontainer">
         A
-        <div id="A" class="reg">
-          ${MakeBits(registers.A)}
+        <div>
+          <span class="humanreadable">AX=${registers.A},AH=${registers.AH},AL=${registers.AL}</span>
+          <div id="A" class="reg">
+            ${MakeBits(registers.A)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         B
-        <div id="B" class="reg">
-          ${MakeBits(registers.B)}
+        <div>
+          <span class="humanreadable">BX=${registers.B},BH=${registers.BH},BL=${registers.BL}</span>
+          <div id="B" class="reg">
+            ${MakeBits(registers.B)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         C
-        <div id="C" class="reg">
-          ${MakeBits(registers.C)}
+        <div>
+          <span class="humanreadable">CX=${registers.C},CH=${registers.CH},CL=${registers.CL}</span>
+          <div id="C" class="reg">
+            ${MakeBits(registers.C)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         D
-        <div id="D" class="reg">
-          ${MakeBits(registers.D)}
+        <div>
+          <span class="humanreadable">DX=${registers.D},DH=${registers.DH},DL=${registers.DL}</span>
+          <div id="D" class="reg">
+            ${MakeBits(registers.D)}
+          </div>
         </div>
       </div>
     </div>
     <div id="pointergroup">
       <div class="reglabelcontainer">
         SP
-        <div id="SP" class="reg">
-          ${MakeBits(registers.SP)}
+        <div>
+          <span class="humanreadable">SP=${registers.SP}</span>
+          <div id="SP" class="reg">
+            ${MakeBits(registers.SP)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         BP
-        <div id="BP" class="reg">
-          ${MakeBits(registers.BP)}
+        <div>
+          <span class="humanreadable">BP=${registers.BP}</span>
+          <div id="BP" class="reg">
+            ${MakeBits(registers.BP)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         SI
-        <div id="SI" class="reg">
-          ${MakeBits(registers.SI)}
+        <div>
+          <span class="humanreadable">SI=${registers.SI}</span>
+          <div id="SI" class="reg">
+            ${MakeBits(registers.SI)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         DI
-        <div id="DI" class="reg">
-          ${MakeBits(registers.DI)}
+        <div>
+          <span class="humanreadable">DI=${registers.DI}</span>
+          <div id="DI" class="reg">
+            ${MakeBits(registers.DI)}
+          </div>
         </div>
       </div>
     </div>
     <div id="specialgroup">
       <div class="reglabelcontainer">
         SS
-        <div id="SS" class="reg">
-          ${MakeBits(registers.SS)}
+        <div>
+          <span class="humanreadable">SS=${registers.SS}</span>
+          <div id="SS" class="reg">
+            ${MakeBits(registers.SS)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         DS
-        <div id="DS" class="reg">
-          ${MakeBits(registers.DS)}
+        <div>
+          <span class="humanreadable">DS=${registers.DS}</span>
+          <div id="DS" class="reg">
+            ${MakeBits(registers.DS)}
+          </div>
         </div>
       </div>
       <div class="reglabelcontainer">
         ES
-        <div id="ES" class="reg">
-          ${MakeBits(registers.ES)}
+        <div>
+          <span class="humanreadable">ES=${registers.ES}</span>
+          <div id="ES" class="reg">
+            ${MakeBits(registers.ES)}
+          </div>
         </div>
       </div>
     </div>
