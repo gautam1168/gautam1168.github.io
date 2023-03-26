@@ -138,8 +138,17 @@ function prepareForExecute(asm) {
   program.asm = asm;
   program.current = 0;
   const stepper = document.querySelector("#stepper");  
-  stepper.addEventListener("click", () => {
+  const btn = document.createElement("button");
+  btn.innerText = "Step";
+  stepper.innerHTML = "";
+  stepper.appendChild(btn);
+  btn.addEventListener("click", () => {
     executeInstruction(program.asm[program.current++].instruction);
+
+    if (program.current == program.asm.length) {
+      program.current = 0;
+    }
+
     renderRegisters();
 
     const instructions = document.querySelectorAll("#instruction");
