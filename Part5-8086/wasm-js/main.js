@@ -1,44 +1,59 @@
 let simLib;
-const _registers = {
-  A: 0x0,
-  B: 0x0,
-  C: 0x0,
-  D: 0x0,
-  SP: 0x0,
-  BP: 0x0,
-  SI: 0x0,
-  DI: 0x0,
-  DS: 0x0,
-  SS: 0x0,
-  ES: 0x0
+const _registers = new Uint16Array(11);
+const regNameMap = {
+  A: 0,
+  B: 1,
+  C: 2,
+  D: 3,
+  SP: 4,
+  BP: 5,
+  SI: 6,
+  DI: 7,
+  DS: 8,
+  SS: 9,
+  ES: 10
 };
 
 const registers = new Proxy(_registers, {
   get(target, prop) {
     if (prop.endsWith("X")) {
-      return target[prop[0]];
+      const regName = prop[0];
+      const regIndex = regNameMap[regName];
+      return target[regIndex];
     } else if (prop.endsWith("L")) {
-      return (target[prop[0]] & 0xff);
+      const regName = prop[0];
+      const regIndex = regNameMap[regName];
+      return (target[regIndex] & 0xff);
     } else if (prop.endsWith("H")) {
-      return target[prop[0]] >> 8;
+      const regName = prop[0];
+      const regIndex = regNameMap[regName];
+      return target[regIndex] >> 8;
     } else {
-      return target[prop];
+      const regIndex = regNameMap[prop];
+      return target[regIndex];
     }
   },
 
   set(target, prop, value) {
     if (prop.endsWith("X")) {
-      target[prop[0]] = value;
+      const regName = prop[0];
+      const regIndex = regNameMap[regName];
+      target[regIndex] = value;
     } else if (prop.endsWith("L")) {
-      const currentHigh = target[prop[0]] >> 8; 
+      const regName = prop[0];
+      const regIndex = regNameMap[regName];
+      const currentHigh = target[regIndex] >> 8; 
       const newvalue = (currentHigh << 8) | value;
-      target[prop[0]] = newvalue;
+      target[regIndex] = newvalue;
     } else if (prop.endsWith("H")) {
-      const currentLow = target[prop[0]] & 0xff; 
+      const regName = prop[0];
+      const regIndex = regNameMap[regName];
+      const currentLow = target[regIndex] & 0xff; 
       const newvalue = (value << 8) | currentLow;
-      target[prop[0]] = newvalue;
+      target[regIndex] = newvalue;
     } else {
-      target[prop] = value;
+      const regIndex = regNameMap[prop];
+      target[regIndex] = value;
     }
     return true;
   }
