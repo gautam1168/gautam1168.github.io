@@ -119,6 +119,25 @@ export async function main() {
 function connectInput() {
   const chooser = document.querySelector("input#chooser");
   chooser.addEventListener("change", loadBinary);
+  /*
+  document.addEventListener("keydown", (ev) => {
+    stepProgram()
+  });
+  */
+}
+
+function stepProgram() {
+  executeInstruction();
+  renderRegisters();
+
+  const instructions = document.querySelectorAll("#instruction");
+  instructions.forEach((inst, i) => {
+    if (i == program.current) {
+      inst.classList.add("selected");
+    } else {
+      inst.classList.remove("selected");
+    }
+  });
 }
 
 async function loadBinary(ev) {
@@ -142,24 +161,7 @@ function prepareForExecute(asm) {
   btn.innerText = "Step";
   stepper.innerHTML = "";
   stepper.appendChild(btn);
-  btn.addEventListener("click", () => {
-    executeInstruction(program.asm[program.current++].instruction);
-
-    if (program.current == program.asm.length) {
-      program.current = 0;
-    }
-
-    renderRegisters();
-
-    const instructions = document.querySelectorAll("#instruction");
-    instructions.forEach((inst, i) => {
-      if (i == program.current) {
-        inst.classList.add("selected");
-      } else {
-        inst.classList.remove("selected");
-      }
-    });
-  });
+  btn.addEventListener("click", stepProgram);
 }
 
 function renderAsm(asm) {
@@ -217,22 +219,30 @@ function generateAsm(fileBytes) {
   return result;
 }
 
-function executeInstruction(Instruction) {
-  const OpName = simLib.Sim86_MnemonicFromOperationType(Instruction.Op);
-  if (OpName == "mov") {
-    const DestRegName = simLib.Sim86_RegisterNameFromOperand(Instruction.Operands[0].Register).toUpperCase();
+function executeInstruction() {
+  if (program.asm.length > 0) {
+    const Instruction = program.asm[program.current++].instruction;
 
-    if (Instruction.Operands[1].Immediate) {
-      registers[DestRegName] = Instruction.Operands[1].Immediate.Value;
-    } else if (Instruction.Operands[1].Register) {
-      const SourceRegName = simLib.Sim86_RegisterNameFromOperand(Instruction.Operands[1].Register).toUpperCase();
-      const value = registers[SourceRegName];
-      registers[DestRegName] = value;
+    if (program.current == program.asm.length) {
+      program.current = 0;
+    }
+
+    const OpName = simLib.Sim86_MnemonicFromOperationType(Instruction.Op);
+    if (OpName == "mov") {
+      const DestRegName = simLib.Sim86_RegisterNameFromOperand(Instruction.Operands[0].Register).toUpperCase();
+
+      if (Instruction.Operands[1].Immediate) {
+        registers[DestRegName] = Instruction.Operands[1].Immediate.Value;
+      } else if (Instruction.Operands[1].Register) {
+        const SourceRegName = simLib.Sim86_RegisterNameFromOperand(Instruction.Operands[1].Register).toUpperCase();
+        const value = registers[SourceRegName];
+        registers[DestRegName] = value;
+      } else {
+        throw new Error("Not implemented");
+      }
     } else {
       throw new Error("Not implemented");
     }
-  } else {
-    throw new Error("Not implemented");
   }
 }
 

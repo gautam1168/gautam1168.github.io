@@ -15,14 +15,13 @@
       <div id="asm"></div>
       <div id="register-container">
         <div id="stepper">
-          <button>Step</button>
         </div>
         <div id="registers"></div>
       </div>
     </div>
     <script type="module">
       import { main } from "./main.js";
-      main();
+      window.onload = main;
     </script>
   </body>
 </html>
