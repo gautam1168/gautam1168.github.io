@@ -10,11 +10,13 @@
 			<a href="/index.html">Home</a>
 		</div>
     <input id="chooser" type="file">
-    <button id="stepper">Step</button>
     <div id="display">
       <div id="binary"></div>
       <div id="asm"></div>
-      <div id="registers"></div>
+      <div id="register-container">
+        <button id="stepper">Step</button>
+        <div id="registers"></div>
+      </div>
     </div>
     <script type="module">
       import { main } from "./main.js";

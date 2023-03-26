@@ -232,47 +232,82 @@ function renderRegisters() {
 
   const MakeBits = (register) => {
     const bitString = register.toString(2).padStart(16, '0');
-    return bitString.split("").map(it => `<div class="bit">${it}</div>`).join("");
+    return bitString.split("").map(it => {
+      return `<div class="bit ${(it == 1) ? 'set':'notset'}">${it}</div>`;
+    }).join("");
   };
 
   display.innerHTML = `
     <div id="datagroup">
-      <div id="A" class="reg">
-        ${MakeBits(registers.A)}
+      <div class="reglabelcontainer">
+        A
+        <div id="A" class="reg">
+          ${MakeBits(registers.A)}
+        </div>
       </div>
-      <div id="B" class="reg">
-        ${MakeBits(registers.B)}
+      <div class="reglabelcontainer">
+        B
+        <div id="B" class="reg">
+          ${MakeBits(registers.B)}
+        </div>
       </div>
-      <div id="C" class="reg">
-        ${MakeBits(registers.C)}
+      <div class="reglabelcontainer">
+        C
+        <div id="C" class="reg">
+          ${MakeBits(registers.C)}
+        </div>
       </div>
-      <div id="D" class="reg">
-        ${MakeBits(registers.D)}
+      <div class="reglabelcontainer">
+        D
+        <div id="D" class="reg">
+          ${MakeBits(registers.D)}
+        </div>
       </div>
     </div>
     <div id="pointergroup">
-      <div id="SP" class="reg">
-        ${MakeBits(registers.SP)}
+      <div class="reglabelcontainer">
+        SP
+        <div id="SP" class="reg">
+          ${MakeBits(registers.SP)}
+        </div>
       </div>
-      <div id="BP" class="reg">
-        ${MakeBits(registers.BP)}
+      <div class="reglabelcontainer">
+        BP
+        <div id="BP" class="reg">
+          ${MakeBits(registers.BP)}
+        </div>
       </div>
-      <div id="SI" class="reg">
-        ${MakeBits(registers.SI)}
+      <div class="reglabelcontainer">
+        SI
+        <div id="SI" class="reg">
+          ${MakeBits(registers.SI)}
+        </div>
       </div>
-      <div id="DI" class="reg">
-        ${MakeBits(registers.DI)}
+      <div class="reglabelcontainer">
+        DI
+        <div id="DI" class="reg">
+          ${MakeBits(registers.DI)}
+        </div>
       </div>
     </div>
     <div id="specialgroup">
-      <div id="SS" class="reg">
-        ${MakeBits(registers.SS)}
+      <div class="reglabelcontainer">
+        SS
+        <div id="SS" class="reg">
+          ${MakeBits(registers.SS)}
+        </div>
       </div>
-      <div id="DS" class="reg">
-        ${MakeBits(registers.DS)}
+      <div class="reglabelcontainer">
+        DS
+        <div id="DS" class="reg">
+          ${MakeBits(registers.DS)}
+        </div>
       </div>
-      <div id="ES" class="reg">
-        ${MakeBits(registers.ES)}
+      <div class="reglabelcontainer">
+        ES
+        <div id="ES" class="reg">
+          ${MakeBits(registers.ES)}
+        </div>
       </div>
     </div>
   `;
