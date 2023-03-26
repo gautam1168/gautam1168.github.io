@@ -46,7 +46,8 @@ const registers = new Proxy(_registers, {
 
 let program = {
   asm: [],
-  current: 0
+  current: 0,
+  fileBytes: []
 };
 
 export async function main() {
@@ -72,6 +73,7 @@ function connectInput() {
 function stepProgram() {
   executeInstruction();
   renderRegisters();
+  renderRawBytes();
 
   const instructions = document.querySelectorAll("#instruction");
   instructions.forEach((inst, i) => {
@@ -88,17 +90,18 @@ async function loadBinary(ev) {
   const buffer = await file.arrayBuffer();
   const fileBytes = new Uint8Array(buffer);
 
-  renderRawBytes(fileBytes);
   const asm = generateAsm(fileBytes);
 
   renderAsm(asm);
-  prepareForExecute(asm);
+  prepareForExecute(asm, fileBytes);
+  renderRawBytes();
   renderRegisters();
 }
 
-function prepareForExecute(asm) {
+function prepareForExecute(asm, fileBytes) {
   program.asm = asm;
   program.current = 0;
+  program.fileBytes = fileBytes;
 }
 
 function renderAsm(asm) {
@@ -109,15 +112,28 @@ function renderAsm(asm) {
   }).join("")
 }
 
-function renderRawBytes(fileBytes) {
+function renderRawBytes() {
+  const fileBytes = program.fileBytes;
   const display = document.querySelector("#display #binary");
+
+  const isCurrentInstruction = index => {
+    const instruction = program.asm[program.current].instruction;
+    if ((index >= instruction.Address) && (index < instruction.Address + instruction.Size)) {
+      return true;
+    }
+    return false;
+  };
 
   let serialized = '';
   for (let i = 0; i < fileBytes.length; ++i) {
-    serialized += fileBytes[i].toString(16).padStart(2, '0') + ' ';
+    const hexValue = fileBytes[i].toString(16).padStart(2, '0');
+    serialized += `
+      <span class="byte ${isCurrentInstruction(i) ? 'active' : '' }">
+        ${hexValue}
+      </span>`;
   }
 
-  display.innerText = serialized;
+  display.innerHTML = serialized;
 }
 
 function generateAsm(fileBytes) {
@@ -143,6 +159,10 @@ function generateAsm(fileBytes) {
       DestOperandAsString = DestOperand.Immediate.Value;
     } else if (DestOperand.Register) {
       DestOperandAsString = simLib.Sim86_RegisterNameFromOperand(DestOperand.Register);
+    }
+
+    if (result.length > 0) {
+      instruction.Address = result[result.length - 1].instruction.Size + result[result.length - 1].instruction.Address;
     }
 
     result.push({
