@@ -1,0 +1,28 @@
+#display
+{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 2px;
+  width: 100vw;
+}
+
+#display #binary,
+#display #asm,
+#display #registers
+{
+  border: solid 1px;
+}
+
+#display #registers .reg
+{
+  border: solid 1px;
+  width: 100%;
+  display: flex;
+}
+
+#display #registers .bit
+{
+  height: 20px;
+  flex-grow: 1;
+  border: solid 1px;
+}

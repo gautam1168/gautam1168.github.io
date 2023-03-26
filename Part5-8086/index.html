@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <title>sim8086</title>
+		<link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="./main.css">
+    <script src="./lib.js" async></script>
+  </head>
+  <body>
+		<div id="breadcrumb">
+			<a href="/index.html">Home</a>
+		</div>
+    <input id="chooser" type="file">
+    <button id="stepper">Step</button>
+    <div id="display">
+      <div id="binary"></div>
+      <div id="asm"></div>
+      <div id="registers"></div>
+    </div>
+    <script type="module">
+      import { main } from "./main.js";
+      main();
+    </script>
+  </body>
+</html>
