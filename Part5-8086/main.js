@@ -1,101 +1,9 @@
 let simLib;
-let registers = {
+const _registers = {
   A: 0x0,
-  get AX() {
-    return this.A;
-  },
-  set AX(val) {
-    this.A = val;
-  },
-  get AL() {
-    return this.A & 0xff;
-  },
-  set AL(val) {
-    const currentAH = this.A >> 8; 
-    const newAX = (currentAH << 8) | val;
-    this.A = newAX;
-  },
-  get AH() {
-    return this.A >> 8;
-  },
-  set AH(val) {
-    const currentAL = this.A & 0xff; 
-    const newAX = (val << 8) | currentAL;
-    this.A = newAX;
-  },
-
   B: 0x0,
-  get BX() {
-    return this.B;
-  },
-  set BX(val) {
-    this.B = val;
-  },
-  get BL() {
-    return this.B & 0xff;
-  },
-  set BL(val) {
-    const currentBH = this.B >> 8; 
-    const newBX = (currentBH << 8) | val;
-    this.B = newBX;
-  },
-  get BH() {
-    return this.B >> 8;
-  },
-  set BH(val) {
-    const currentBL = this.B & 0xff; 
-    const newBX = (val << 8) | currentBL;
-    this.B = newBX;
-  },
-
   C: 0x0,
-  get CX() {
-    return this.C;
-  },
-  set CX(val) {
-    this.C = val;
-  },
-  get CL() {
-    return this.C & 0xff;
-  },
-  set CL(val) {
-    const currentCH = this.C >> 8; 
-    const newCX = (currentCH << 8) | val;
-    this.C = newCX;
-  },
-  get CH() {
-    return this.C >> 8;
-  },
-  set CH(val) {
-    const currentCL = this.C & 0xff; 
-    const newCX = (val << 8) | currentCL;
-    this.C = newCX;
-  },
-
   D: 0x0,
-  get DX() {
-    return this.D;
-  },
-  set DX(val) {
-    this.D = val;
-  },
-  get DL() {
-    return this.D & 0xff;
-  },
-  set DL(val) {
-    const currentDH = this.D >> 8; 
-    const newDX = (currentDH << 8) | val;
-    this.D = newDX;
-  },
-  get DH() {
-    return this.D >> 8;
-  },
-  set DH(val) {
-    const currentDL = this.D & 0xff; 
-    const newDX = (val << 8) | currentDL;
-    this.D = newDX;
-  },
-
   SP: 0x0,
   BP: 0x0,
   SI: 0x0,
@@ -104,6 +12,37 @@ let registers = {
   SS: 0x0,
   ES: 0x0
 };
+
+const registers = new Proxy(_registers, {
+  get(target, prop) {
+    if (prop.endsWith("X")) {
+      return target[prop[0]];
+    } else if (prop.endsWith("L")) {
+      return (target[prop[0]] & 0xff);
+    } else if (prop.endsWith("H")) {
+      return target[prop[0]] >> 8;
+    } else {
+      return target[prop];
+    }
+  },
+
+  set(target, prop, value) {
+    if (prop.endsWith("X")) {
+      target[prop[0]] = value;
+    } else if (prop.endsWith("L")) {
+      const currentHigh = target[prop[0]] >> 8; 
+      const newvalue = (currentHigh << 8) | value;
+      target[prop[0]] = newvalue;
+    } else if (prop.endsWith("H")) {
+      const currentLow = target[prop[0]] & 0xff; 
+      const newvalue = (value << 8) | currentLow;
+      target[prop[0]] = newvalue;
+    } else {
+      target[prop] = value;
+    }
+    return true;
+  }
+});
 
 let program = {
   asm: [],
