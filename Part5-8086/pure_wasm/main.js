@@ -229,6 +229,8 @@ export async function main() {
 
   const stepper = document.querySelector("button#stepper");
   stepper.addEventListener("click", stepProgram);
+
+  renderRegisters();
 }
 
 function stepProgram() {
