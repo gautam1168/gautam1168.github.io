@@ -1,24 +1,20 @@
 // #include <stdio.h>
 
-typedef unsigned int bool;
-#define false 0
-#define true 1
-
-typedef struct call_stack_entry 
+struct call_stack_entry 
 {
-	char *InputString;
-	char *PatternString;
+	const char *InputString;
+	const char *PatternString;
 	int CallerIndex;
 	int NumChildren;
 	struct call_stack_entry *Children[3];
-} call_stack_entry;
+};
 
-typedef struct font_pixels 
+struct font_pixels 
 {
 	int Width;
 	int Height;
 	unsigned int *Pixels;
-} font_pixels;
+};
 
 unsigned char CharToFontIndexMap[256];
 
@@ -229,8 +225,8 @@ RecursiveNodeRender(unsigned int *Pixel, font_pixels *Font, int Width, int Heigh
 
 	RenderBox(Pixel, Width, Height, &BoxConfig, Color);
 	// char Word[] = "some text\0";
-	RenderWord(Pixel, Font, Width, Height, Node->InputString, LocX, LocY);
-	RenderWord(Pixel, Font, Width, Height, Node->PatternString, LocX, LocY + 25);
+	RenderWord(Pixel, Font, Width, Height, (char *)Node->InputString, LocX, LocY);
+	RenderWord(Pixel, Font, Width, Height, (char *)Node->PatternString, LocX, LocY + 25);
 	if (Node->NumChildren) 
 	{
 		for (int ChildIndex = 0;
@@ -261,7 +257,7 @@ RenderCallTree(unsigned int *Pixel, font_pixels *Font, int Width, int Height, ca
 	RecursiveNodeRender(Pixel, Font, Width, Height, Root, LocX, LocY, Color);
 }
 
-bool
+extern "C" bool
 runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 {
 	int UsedEntries = 0;
@@ -302,25 +298,3 @@ runMatch(unsigned int *Pixels, int Width, int Height, char *Input)
 	return Result;
 }
 
-/*
-int
-main(int NumArgs, char **Args) 
-{
-	char Input[] = "a\0";
-	char Pattern[] = ".*..a*\0";
-	bool Result = isMatch(Input, Pattern);
-	printf("Answer: %d\n", Result);
-	return 0;
-}
-
-void
-Print(unsigned char *Buffer, int Width, int Height)
-{
-	unsigned int *Pixel = (unsigned int *)Buffer;
-	for (int Index = 0; Index < Width * Height; ++Index) 
-	{
-		// AABBGGRR
-		*Pixel++ = 0xffaad000;
-	}
-}
-*/
