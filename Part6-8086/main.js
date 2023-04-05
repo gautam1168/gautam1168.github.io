@@ -77,7 +77,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         A
         <div>
-          <span class="humanreadable">AX=${registers.A},AH=${registers.AH},AL=${registers.AL}</span>
+          <span class="humanreadable">AX=0x${registers.A.toString(16)},AH=0x${registers.AH.toString(16)},AL=0x${registers.AL.toString(16)}</span>
           <div id="A" class="reg">
             ${MakeBits(registers.A)}
           </div>
@@ -86,7 +86,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         B
         <div>
-          <span class="humanreadable">BX=${registers.B},BH=${registers.BH},BL=${registers.BL}</span>
+          <span class="humanreadable">BX=0x${registers.B.toString(16)},BH=0x${registers.BH.toString(16)},BL=0x${registers.BL.toString(16)}</span>
           <div id="B" class="reg">
             ${MakeBits(registers.B)}
           </div>
@@ -95,7 +95,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         C
         <div>
-          <span class="humanreadable">CX=${registers.C},CH=${registers.CH},CL=${registers.CL}</span>
+          <span class="humanreadable">CX=0x${registers.C.toString(16)},CH=0x${registers.CH.toString(16)},CL=0x${registers.CL.toString(16)}</span>
           <div id="C" class="reg">
             ${MakeBits(registers.C)}
           </div>
@@ -104,7 +104,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         D
         <div>
-          <span class="humanreadable">DX=${registers.D},DH=${registers.DH},DL=${registers.DL}</span>
+          <span class="humanreadable">DX=0x${registers.D.toString(16)},DH=0x${registers.DH.toString(16)},DL=0x${registers.DL.toString(16)}</span>
           <div id="D" class="reg">
             ${MakeBits(registers.D)}
           </div>
@@ -115,7 +115,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         SP
         <div>
-          <span class="humanreadable">SP=${registers.SP}</span>
+          <span class="humanreadable">SP=0x${registers.SP.toString(16)}</span>
           <div id="SP" class="reg">
             ${MakeBits(registers.SP)}
           </div>
@@ -124,7 +124,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         BP
         <div>
-          <span class="humanreadable">BP=${registers.BP}</span>
+          <span class="humanreadable">BP=0x${registers.BP.toString(16)}</span>
           <div id="BP" class="reg">
             ${MakeBits(registers.BP)}
           </div>
@@ -133,7 +133,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         SI
         <div>
-          <span class="humanreadable">SI=${registers.SI}</span>
+          <span class="humanreadable">SI=0x${registers.SI.toString(16)}</span>
           <div id="SI" class="reg">
             ${MakeBits(registers.SI)}
           </div>
@@ -142,9 +142,18 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         DI
         <div>
-          <span class="humanreadable">DI=${registers.DI}</span>
+          <span class="humanreadable">DI=0x${registers.DI.toString(16)}</span>
           <div id="DI" class="reg">
             ${MakeBits(registers.DI)}
+          </div>
+        </div>
+      </div>
+      <div class="reglabelcontainer">
+        IP
+        <div>
+          <span class="humanreadable">BP=0x${registers.IP.toString(16)}</span>
+          <div id="IP" class="reg">
+            ${MakeBits(registers.IP)}
           </div>
         </div>
       </div>
@@ -153,7 +162,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         SS
         <div>
-          <span class="humanreadable">SS=${registers.SS}</span>
+          <span class="humanreadable">SS=0x${registers.SS.toString(16)}</span>
           <div id="SS" class="reg">
             ${MakeBits(registers.SS)}
           </div>
@@ -162,7 +171,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         DS
         <div>
-          <span class="humanreadable">DS=${registers.DS}</span>
+          <span class="humanreadable">DS=0x${registers.DS.toString(16)}</span>
           <div id="DS" class="reg">
             ${MakeBits(registers.DS)}
           </div>
@@ -171,7 +180,7 @@ function renderRegisters() {
       <div class="reglabelcontainer">
         ES
         <div>
-          <span class="humanreadable">ES=${registers.ES}</span>
+          <span class="humanreadable">ES=0x${registers.ES.toString(16)}</span>
           <div id="ES" class="reg">
             ${MakeBits(registers.ES)}
           </div>
@@ -214,18 +223,30 @@ function renderRegisters() {
 
 function renderRawBytes() {
   const input = document.querySelector("#binary");
+  const currentByte = registers.IP;
   let outputString = "";
   for (let i = 0; i < filebytes.length; ++i) {
-    outputString += filebytes[i].toString(16).padStart(2, '0') + " ";
+    outputString += `<span class='byte ${i == currentByte ? "active": ""}'>  
+      ${filebytes[i].toString(16).padStart(2, '0')} 
+    </span>`;
   }
-  input.innerText = outputString;
+  input.innerHTML = outputString;
 }
 
 function renderAsm(outputLog) {
   const output = document.querySelector("#asm");
-  const lines = outputLog.split("\n");
+  const lines = outputLog.split("\n").filter(line => !!line);
+
+  let byteOffset = 0;
   output.innerHTML = lines.map((it, i) => {
-    return `<div id="instruction" class="${i == 0 ? 'selected':''}">${it}</div>`;
+    const [bytes, asm] = it.split(";").map(it => it.trim());
+    const result =  `
+    <div id="instruction" data-byteoffset=${byteOffset} class="${i == 0 ? 'selected':''}">
+      ${asm}
+    </div>`;
+    byteOffset += parseInt(bytes);
+
+    return result;
   }).join("");
 }
 
@@ -265,24 +286,33 @@ export async function main() {
 }
 
 function stepProgram() {
-  const offset = instance.exports.__heap_base;
-  const MaxMemory = BigInt(view.length - offset);
-  const registerOffset = instance.exports.Step(offset, filebytes.length, MaxMemory);
-  const wordView = new Uint32Array(view.buffer, registerOffset);
-  const currentOffset = wordView[0];
-  const currentInstruction = wordView[1];
+  if (filebytes == undefined) {
+    alert("First use the choose file button to load a binary!");
+  } else if (registers.IP == filebytes.length) {
+    alert("Program has finished execution! Reload the page to start over.");
+  } else {
+    const offset = instance.exports.__heap_base;
+    const MaxMemory = BigInt(view.length - offset);
+    const registerOffset = instance.exports.Step(offset, filebytes.length, MaxMemory);
+    const wordView = new Uint32Array(view.buffer, registerOffset);
+    const currentOffset = wordView[0];
+    const currentInstruction = wordView[1];
 
-  // 4 bytes for currentOffset, 4 bytes for currentInstruction and 2 bytes for blank register
-  const regView = new Uint16Array(view.buffer, registerOffset + 10, 14);
-  _registers.set(regView);
-  renderRegisters();
+    // 4 bytes for currentOffset, 4 bytes for currentInstruction and 2 bytes for blank register
+    const regView = new Uint16Array(view.buffer, registerOffset + 10, 14);
+    _registers.set(regView);
+    renderRegisters();
 
-  const instructions = document.querySelectorAll("#instruction");
-  instructions.forEach((inst, i) => {
-    if (i == currentInstruction) {
-      inst.classList.add("selected");
-    } else {
-      inst.classList.remove("selected");
-    }
-  });
+    const instructions = document.querySelectorAll("#instruction");
+    instructions.forEach((inst, i) => {
+      const byteOffset = inst.getAttribute("data-byteoffset");
+      if (byteOffset == registers.IP) {
+        inst.classList.add("selected");
+      } else {
+        inst.classList.remove("selected");
+      }
+    });
+
+    renderRawBytes();
+  }
 }
