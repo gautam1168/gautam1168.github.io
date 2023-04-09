@@ -56,8 +56,8 @@ async function onFile(ev, view, instance) {
   const outputView = new Uint8Array(view.buffer, resultOffset + 4, numBytesInResult - 4);
   const outputLog = String.fromCharCode.apply(null, outputView);
 
-  
   renderRawBytes();
+  renderMemory();
   renderAsm(outputLog);
   renderRegisters();
 }
@@ -154,6 +154,35 @@ function renderRegisters() {
   `;
 }
 
+function renderMemory() {
+  const container = document.querySelector("#display #memory");
+  const rect = container.getBoundingClientRect();
+  container.innerHTML = '';
+  const canvas = document.createElement("canvas");
+  container.appendChild(canvas);
+  canvas.width = 1024; // rect.width - 1;
+  canvas.height = 1024; //rect.height - 1;
+
+  const cellWidth = 1;
+  const cellHeight = 1;
+  
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const memory = new Uint32Array(view, instance.exports.__heap_base, instance.exports.__heap_base + (1 << 20));
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < 1024 * 1024; ++i)
+  {
+    const byteValue = memory[i];
+    imageData.data[4 * i] = byteValue;     // red
+    imageData.data[4 * i + 1] = 0x00; // green
+    imageData.data[4 * i + 2] = 0x00; // blue
+    imageData.data[4 * i + 3] = 0xff; // alpha
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
 function renderRawBytes() {
   const input = document.querySelector("#binary");
   const currentByte = registers.IP;
@@ -247,5 +276,6 @@ function stepProgram() {
     });
 
     renderRawBytes();
+    renderMemory();
   }
 }
