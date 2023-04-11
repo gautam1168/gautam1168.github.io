@@ -154,6 +154,7 @@ function renderRegisters() {
   `;
 }
 
+/*
 function renderMemory() {
   const container = document.querySelector("#display #memory");
   const rect = container.getBoundingClientRect();
@@ -182,11 +183,39 @@ function renderMemory() {
   }
   ctx.putImageData(imageData, 0, 0);
 }
+*/
+
+function renderMemory() {
+  const container = document.querySelector("#display #memory");
+  container.innerHTML = "";
+
+  const codeSegmentMemory = new Uint8Array(view.buffer, instance.exports.__heap_base, 50);
+
+  let bytesDisplay = '<div>Code Segment</div>';
+  for (let i = 0; i < codeSegmentMemory.length; ++i)
+  {
+    const serializedByte = codeSegmentMemory[i].toString(16).padStart(2, '0') + ' ';
+    bytesDisplay += `<span class='byte'>  
+        ${serializedByte} 
+      </span>`;
+  }
+
+  bytesDisplay += '<div>Data Segment</div>';
+  const dataSegmentMemory = new Uint8Array(view.buffer, instance.exports.__heap_base + (1 << 16) + 1000, 50);
+  for (let i = 0; i < dataSegmentMemory.length; ++i)
+  {
+    const serializedByte = dataSegmentMemory[i].toString(16).padStart(2, '0') + ' ';
+    bytesDisplay += `<span class='byte'>  
+        ${serializedByte} 
+      </span>`;
+  }
+  container.innerHTML = bytesDisplay;
+}
 
 function renderRawBytes() {
   const input = document.querySelector("#binary");
   const currentByte = registers.IP;
-  let outputString = "";
+  let outputString = "<div>File bytes</div>";
   for (let i = 0; i < filebytes.length; ++i) {
     outputString += `<span class='byte ${i == currentByte ? "active": ""}'>  
       ${filebytes[i].toString(16).padStart(2, '0')} 
@@ -245,6 +274,7 @@ export async function main() {
   stepper.addEventListener("click", stepProgram);
 
   renderRegisters();
+  renderMemory();
 }
 
 function stepProgram() {

@@ -18,6 +18,8 @@
 {
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #display #binary,
@@ -28,13 +30,8 @@
   overflow-y: auto;
 }
 
-#display #memory canvas 
-{
-  width: 100%;
-  height: 100%;
-}
-
-#display #binary .byte 
+#display #binary .byte, 
+#display #memory .byte
 {
   display: inline-flex;
   padding: 4px;
