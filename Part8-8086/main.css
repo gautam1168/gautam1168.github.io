@@ -1,0 +1,112 @@
+#display
+{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 2px;
+  width: 100vw;
+}
+
+#display #binary,
+#display #asm,
+#display #registers,
+#display #memory
+{
+  border: solid 1px;
+}
+
+#display #memorypane 
+{
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#display #binary,
+#display #memory 
+{
+  height: 50%;
+  max-width: 33vw;
+  overflow-y: auto;
+}
+
+#display #binary .byte, 
+#display #memory .byte
+{
+  display: inline-flex;
+  padding: 4px;
+}
+
+#display #binary .byte.active 
+{
+  border: solid 1px green;
+  background: #9ee99e;
+}
+
+#display #registers > div
+{
+  margin: 10px;
+}
+
+#display .reglabelcontainer {
+  display: grid;
+  grid-template-columns: 25px 1fr;
+  align-items: center;
+}
+
+#display #registers #datagroup,
+#display #registers #pointergroup,
+#display #registers #specialgroup
+{
+  border: solid 1px;
+  padding: 5px;
+}
+
+#display #registers .reg
+{
+  border: solid 1px;
+  width: 100%;
+  display: flex;
+  margin-bottom: 10px;
+}
+
+#display #registers .humanreadable
+{
+  font-size: 12px;
+  font-weight: bold;
+  color: #646464;
+}
+
+#display #registers .bit
+{
+  height: 20px;
+  flex-grow: 1;
+  border: solid 1px #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#display #registers .bit.notset 
+{
+  color: #ccc;
+}
+
+#display #registers .flagbitcontainer {
+  height: 40px;
+  border: solid 1px #ccc;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+}
+
+#display #registers .flagbit.notset {
+  color: #ccc;
+}
+
+#instruction.selected {
+  border: solid 1px green;
+  background: #9ee99e;
+}
