@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <title>sim8086</title>
+		<link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="./main.css">
+  </head>
+  <body>
+    <div id="breadcrumb">
+			<a href="/index.html">Home</a>
+		</div>
+    <input id="chooser" type="file">
+    <div id="display">
+      <div id="memorypane">
+        <div id="memory"></div>
+        <div id="binary"></div>
+      </div>
+      <div id="asm"></div>
+      <div id="register-container">
+        <div>
+          <button id="stepper">
+            Step (Ctrl + F10)
+          </button>
+          <button id="runner">
+            Run
+          </button>
+        </div>
+        <div id="registers"></div>
+      </div>
+    </div>
+    <script type="module">
+      import { main } from "./main.js"
+      main();
+    </script>
+  </body>
+</html>
