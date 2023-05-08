@@ -212,12 +212,13 @@ function renderAsm(outputLog) {
   const output = document.querySelector("#asm");
   const lines = outputLog.split("\n").filter(line => !!line);
 
+  const plusPrefixedString = (arg, suffix) => arg ? ('+ ' + arg + suffix) : '';
   let byteOffset = 0;
   output.innerHTML = lines.map((it, i) => {
-    const [bytes, cycles, eacycles, asm] = it.split(";").map(it => it.trim());
+    const [bytes, cycles, eacycles, pcycles, asm] = it.split(";").map(it => it.trim());
     const result =  `
     <div id="instruction" data-byteoffset=${byteOffset} class="${i == 0 ? 'selected':''}">
-      ${cycles} ${eacycles ? '+' : ''} ${eacycles} : ${asm}
+      ${cycles} ${plusPrefixedString(eacycles, 'ea')} ${plusPrefixedString(pcycles, 'p')} : ${asm}
     </div>`;
     byteOffset += parseInt(bytes);
 
