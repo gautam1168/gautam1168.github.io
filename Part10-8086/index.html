@@ -8,6 +8,7 @@
     <div id="breadcrumb">
 			<a href="/index.html">Home</a>
 		</div>
+    <button id="dialog-opener">Choose from homeworks</button>
     <input id="chooser" type="file">
     <div id="display">
       <div id="memorypane">
@@ -27,6 +28,94 @@
         <div id="registers"></div>
       </div>
     </div>
+    <dialog id="homework-files">
+      <div>
+        <div id="listing-container">
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0037_single_register_mov"><div>listing_0037_single_register_mov</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0038_many_register_mov"><div>listing_0038_many_register_mov</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0039_more_movs"><div>listing_0039_more_movs</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0040_challenge_movs"><div>listing_0040_challenge_movs</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0041_add_sub_cmp_jnz"><div>listing_0041_add_sub_cmp_jnz</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0042_completionist_decode"><div>listing_0042_completionist_decode</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0043_immediate_movs"><div>listing_0043_immediate_movs</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0044_register_movs"><div>listing_0044_register_movs</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0045_challenge_register_movs"><div>listing_0045_challenge_register_movs</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0046_add_sub_cmp"><div>listing_0046_add_sub_cmp</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0047_challenge_flags"><div>listing_0047_challenge_flags</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0048_ip_register"><div>listing_0048_ip_register</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0049_conditional_jumps"><div>listing_0049_conditional_jumps</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0050_challenge_jumps"><div>listing_0050_challenge_jumps</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0051_memory_mov"><div>listing_0051_memory_mov</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0052_memory_add_loop"><div>listing_0052_memory_add_loop</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0053_add_loop_challenge"><div>listing_0053_add_loop_challenge</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0054_draw_rectangle"><div>listing_0054_draw_rectangle</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0055_challenge_rectangle"><div>listing_0055_challenge_rectangle</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0056_estimating_cycles"><div>listing_0056_estimating_cycles</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0057_challenge_cycles"><div>listing_0057_challenge_cycles</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0059_single_scalar"><div>listing_0059_single_scalar</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0060_Unroll2Scalar"><div>listing_0060_Unroll2Scalar</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0061_DualScalar"><div>listing_0061_DualScalar</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0062_QuadScalar"><div>listing_0062_QuadScalar</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0063_QuadScalarPtr"><div>listing_0063_QuadScalarPtr</div>
+          </div>
+          <div class="homework-listing">
+            <input name="listing" type="radio" value="listing_0064_TreeScalarPtr"><div>listing_0064_TreeScalarPtr</div>
+          </div>
+        </div>
+        <button id="dialog-closer">Load</button>
+      </div>
+    </dialog>
     <script type="module">
       import { main } from "./main.js"
       main();

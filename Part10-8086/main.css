@@ -12,6 +12,8 @@
 #display #memory
 {
   border: solid 1px;
+  max-height: 100vh;
+  overflow-y: auto;
 }
 
 #display #memorypane 
@@ -106,7 +108,38 @@
   color: #ccc;
 }
 
+#instruction 
+{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  border: solid 1px #ccc;
+}
+
 #instruction.selected {
   border: solid 1px green;
   background: #9ee99e;
+}
+
+#instruction .cycles 
+{
+  border: solid 1px #46a149;
+  padding: 2px;
+  font-size: 10px;
+  margin-left: 5px;
+  border-radius: 4px;
+  background: #ceffd1;
+}
+
+#listing-container
+{
+  display: flex;
+  flex-direction: column;
+}
+
+.homework-listing
+{
+  display: flex;
+  padding: 5px 0px;
 }

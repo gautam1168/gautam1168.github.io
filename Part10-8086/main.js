@@ -216,10 +216,31 @@ function renderAsm(outputLog) {
   let byteOffset = 0;
   output.innerHTML = lines.map((it, i) => {
     const [bytes, cycles, eacycles, pcycles, asm] = it.split(";").map(it => it.trim());
+    let cycleCount = `${cycles}`;
+    if (eacycles) 
+    {
+      cycleCount += ` + ${eacycles}ea`;
+    }
+
+    if (pcycles)
+    {
+      cycleCount += ` + ${pcycles}`;
+    }
+    
+    if ((cycles < 0) || (eacycles < 0) || (pcycles < 0))
+    {
+      cycleCount = 'not implemented';
+    }
+    else
+    {
+      cycleCount += ' cycles';
+    }
+
     const result =  `
     <div id="instruction" data-byteoffset=${byteOffset} class="${i == 0 ? 'selected':''}">
-      ${cycles} ${plusPrefixedString(eacycles, 'ea')} ${plusPrefixedString(pcycles, 'p')} : ${asm}
+       <span>${asm}</span><span class="cycles">${cycleCount} </span>
     </div>`;
+
     byteOffset += parseInt(bytes);
 
     return result;
@@ -250,8 +271,12 @@ export async function main() {
   );
 
   document.addEventListener("keydown", (ev) => {
+    debugger
     if (ev.ctrlKey && ev.keyCode == 121) {
       stepProgram()
+    }
+    else if (ev.key == "Enter" && window.dialogIsOpen) {
+      selectHomework()
     }
   });
 
@@ -264,6 +289,7 @@ export async function main() {
   renderRegisters();
   renderMemory();
 
+  /*
   fetch("./listing_0056_estimating_cycles")
     .then(res => res.blob())
     .then(res => {
@@ -272,6 +298,47 @@ export async function main() {
     .then(() => {
       // return runProgramToCompletion();
     })
+    */
+
+  setupHomeworkDialog();
+}
+
+function setupHomeworkDialog() {
+  const HomeworkDialog = document.querySelector("dialog")
+  const HomeworkDialogOpener = document.querySelector("#dialog-opener");
+  const HomeworkDialogCloser = document.querySelector("#dialog-closer");
+  HomeworkDialogOpener.addEventListener("click", () => {
+    window.dialogIsOpen = true;
+    HomeworkDialog.showModal();
+  });
+  HomeworkDialogCloser.addEventListener("click", () => {
+    selectHomework();
+  });
+}
+
+function selectHomework() {
+  const HomeworkDialog = document.querySelector("dialog")
+  const Inputs = document.querySelectorAll("#listing-container input");
+  let SelectedInputValue = null;
+  Inputs.forEach(inputEl => {
+    if (inputEl.checked)
+    {
+      SelectedInputValue = inputEl.value;
+    }
+  });
+  if (SelectedInputValue) {
+    console.log("Selected Value: ", SelectedInputValue);
+    fetch("./" + SelectedInputValue)
+      .then(res => res.blob())
+      .then(res => {
+        return onFile({ target: { files: [res] }}, view, instance);
+      })
+      .then(() => {
+        // return runProgramToCompletion();
+      })
+  }
+  HomeworkDialog.close();
+  window.dialogIsOpen = false;
 }
 
 function stepProgram() {
