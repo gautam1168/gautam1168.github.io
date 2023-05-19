@@ -170,7 +170,7 @@ function renderMemory() {
   }
 
   bytesDisplay += '<div>Data Segment</div>';
-  const dataSegmentMemory = new Uint8ClampedArray(view.buffer, instance.exports.__heap_base + (1 << 16) + 256, 64 * 64 * 4);
+  const dataSegmentMemory = new Uint8ClampedArray(view.buffer, instance.exports.__heap_base + 256, 64 * 64 * 4);
   const imageData = new ImageData(dataSegmentMemory, 64, 64);
 
   container.innerHTML = bytesDisplay;
@@ -224,7 +224,7 @@ function renderAsm(outputLog) {
 
     if (pcycles)
     {
-      cycleCount += ` + ${pcycles}`;
+      cycleCount += ` + ${pcycles}p`;
     }
     
     if ((cycles < 0) || (eacycles < 0) || (pcycles < 0))
@@ -271,7 +271,6 @@ export async function main() {
   );
 
   document.addEventListener("keydown", (ev) => {
-    debugger
     if (ev.ctrlKey && ev.keyCode == 121) {
       stepProgram()
     }
@@ -349,7 +348,8 @@ function stepProgram() {
   } else {
     const offset = instance.exports.__heap_base;
     const MaxMemory = BigInt(view.length - offset);
-    const registerOffset = instance.exports.Step(offset, filebytes.length, MaxMemory);
+    debugger
+    const registerOffset = instance.exports.Step2(offset, filebytes.length, MaxMemory);
     const wordView = new Uint32Array(view.buffer, registerOffset);
     const currentOffset = wordView[0];
     const currentInstruction = wordView[1];
@@ -382,7 +382,7 @@ function runProgramToCompletion() {
     const MaxMemory = BigInt(view.length - offset);
     let registerOffset = 0;
     while (registers.IP < filebytes.length) {
-      registerOffset = instance.exports.Step(offset, filebytes.length, MaxMemory);
+      registerOffset = instance.exports.Step2(offset, filebytes.length, MaxMemory);
       const wordView = new Uint32Array(view.buffer, registerOffset);
       const currentOffset = wordView[0];
       const currentInstruction = wordView[1];
