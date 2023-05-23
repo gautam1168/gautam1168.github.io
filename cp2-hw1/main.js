@@ -48,14 +48,19 @@ function CreateGlobe(Data)
 
 function generateCoordinatePairs(NumPairs)
 {
+  // lat: -90,90
+  // lon: -180,180
+  const Cluster1 = { lat: 20, lon: 70};
+  const Cluster2 = { lat: -40, lon: -130};
+
   const Coords = new Float32Array(NumPairs * 4);
   for (let CoordIndex = 0; CoordIndex < Coords.length; CoordIndex += 4)
   {
     // lon,lat,lon,lat
-    Coords[CoordIndex] = Math.random()*80 - 40;
-    Coords[CoordIndex + 1] = Math.random()*40;
-    Coords[CoordIndex + 2] = Math.random()*80 - 40;
-    Coords[CoordIndex + 3] = Math.random()*40;
+    Coords[CoordIndex] = Cluster1.lon + (Math.random()*20 - 10); // Math.random()*80 - 40;
+    Coords[CoordIndex + 1] = Cluster1.lat + (Math.random()*20 - 10); // Math.random()*40;
+    Coords[CoordIndex + 2] = Cluster2.lon + (Math.random()*20 - 10); // Math.random()*80 - 40;
+    Coords[CoordIndex + 3] = Cluster2.lat + (Math.random()*20 - 10); // Math.random()*40;
   }
 
   let JsonFrag = new Array(NumPairs);
