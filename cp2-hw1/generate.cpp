@@ -40,40 +40,47 @@ AddString(output_buffer *Buffer, const u8 *String)
 void
 AddNumber(output_buffer *Buffer, f32 Number)
 {
-  u32 AllBits = *((u32 *)&Number);
-  s32 Sign = (AllBits >> 31) & 1;
-  if (Sign == 1)
+  if (Number < 0)
   {
     Buffer->Memory[Buffer->Cursor++] = '-';
+    Number = -Number;
+  }
+  
+  char TempBuffer[50] = {};
+  int Length = 0;
+
+  s32 Whole = (s32)Number;
+  while (Whole > 0)
+  {
+    u8 Digit = Whole % 10;
+    TempBuffer[Length++] = '0' + Digit;
+    Whole = Whole / 10;
   }
 
-  s32 Exponent = (AllBits >> 23) & 0xFF;
-  Exponent = Exponent - 127;
+  int NumDigsBeforeDecimal = Length;
+  TempBuffer[Length++] = '.';
 
-  AddString(Buffer, (const u8 *)"1.");
-  s32 Mantissa = AllBits & 0x7FFFFF;
-  while (Mantissa > 0)
+  Number = (Number - s32(Number)) * 1e12;
+  unsigned long long DecimalDigs = (unsigned long long)Number;
+
+  
+  while (DecimalDigs > 0)
   {
-    u8 MantissaDigit = Mantissa % 10;
-    Buffer->Memory[Buffer->Cursor++] = '0' + MantissaDigit;
-    Mantissa = Mantissa / 10;
+    u8 Digit = DecimalDigs % 10;
+    TempBuffer[Length++] = '0' + Digit;
+    DecimalDigs = DecimalDigs / 10;
   }
 
-  if (Exponent < 0)
+  for (int Index = NumDigsBeforeDecimal - 1; Index >= 0; --Index)
   {
-    AddString(Buffer, (const u8 *)"e-");
-    Exponent = -Exponent;
-  }
-  else
-  {
-    Buffer->Memory[Buffer->Cursor++] = 'e';
+    Buffer->Memory[Buffer->Cursor++] = TempBuffer[Index];
   }
 
-  while (Exponent > 0)
+  Buffer->Memory[Buffer->Cursor++] = '.';
+
+  for (int Index = Length - 1; Index > NumDigsBeforeDecimal; --Index)
   {
-    u8 ExponentDigit = Exponent % 10;
-    Buffer->Memory[Buffer->Cursor++] = '0' + ExponentDigit;
-    Exponent = Exponent / 10;
+    Buffer->Memory[Buffer->Cursor++] = TempBuffer[Index];
   }
 }
 

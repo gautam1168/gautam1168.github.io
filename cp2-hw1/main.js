@@ -347,7 +347,7 @@ async function showFileContents()
 window.onload = function ()
 {
   let button = document.querySelector("#generation button#write-10k");
-  button.addEventListener("click", () => setAndCreate(1 << 24));
+  button.addEventListener("click", () => setAndCreate(1 << 15)); //24));
   
   button = document.querySelector("#visualization button");
   button.addEventListener("click", showFileContents);
