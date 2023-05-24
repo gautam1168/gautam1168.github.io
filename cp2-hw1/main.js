@@ -120,7 +120,7 @@ function PagesForBytes(NumBytes)
   return Math.ceil(NumBytes / BytesPerPage);
 }
 
-async function GeneratePairsInBinaryWasm(NumPairs, lat1, lon1, lat2, lon2)
+async function GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2)
 {
   let instance, WasmMemory;
   const BytesPerBrace = 1;
@@ -192,10 +192,10 @@ async function GeneratePairsInBinaryWasm(NumPairs, lat1, lon1, lat2, lon2)
   for (let CoordIndex = 0; CoordIndex < Coords.length; CoordIndex += 4)
   {
     // lon,lat,lon,lat
-    Coords[CoordIndex] = Cluster1.lon + (Math.random()*20 - 10); // Math.random()*80 - 40;
-    Coords[CoordIndex + 1] = Cluster1.lat + (Math.random()*20 - 10); // Math.random()*40;
-    Coords[CoordIndex + 2] = Cluster2.lon + (Math.random()*20 - 10); // Math.random()*80 - 40;
-    Coords[CoordIndex + 3] = Cluster2.lat + (Math.random()*20 - 10); // Math.random()*40;
+    Coords[CoordIndex] = Cluster1.lon + (Math.random()*2*spread - spread); // Math.random()*80 - 40;
+    Coords[CoordIndex + 1] = Cluster1.lat + (Math.random()*2*spread - spread); // Math.random()*40;
+    Coords[CoordIndex + 2] = Cluster2.lon + (Math.random()*2*spread - spread); // Math.random()*80 - 40;
+    Coords[CoordIndex + 3] = Cluster2.lat + (Math.random()*2*spread - spread); // Math.random()*40;
   }
   window.state.lastComputation.pairs = Coords;
   
@@ -214,6 +214,7 @@ async function createAFile()
 
   const cluster2Lon = document.querySelector("#visualization #cluster2 div#longitude input");
   const cluster2Lat = document.querySelector("#visualization #cluster2 div#latitude input");
+  const spread = parseFloat(document.querySelector("input#spread").value);
 
   const NumPairs = parseInt(DataPoints.value);
   const lat1 = parseFloat(cluster1Lat.value);
@@ -225,7 +226,7 @@ async function createAFile()
   const WritableStream = await FileHandle.createWritable();
   const DefaultWriter = WritableStream.getWriter();
   await DefaultWriter.ready;
-  const DataBuffer = await GeneratePairsInBinaryWasm(NumPairs, lat1, lon1, lat2, lon2);
+  const DataBuffer = await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
   DefaultWriter.write(DataBuffer);
   await DefaultWriter.ready;
   DefaultWriter.close();
@@ -310,11 +311,13 @@ window.onload = function ()
   button.addEventListener("click", resetPoints);
   const PairsInput = document.querySelector("#generation input");
 
-  const cluster1Lon = document.querySelector("#visualization #cluster1 div#longitude input");
   const cluster1Lat = document.querySelector("#visualization #cluster1 div#latitude input");
+  const cluster1Lon = document.querySelector("#visualization #cluster1 div#longitude input");
 
-  const cluster2Lon = document.querySelector("#visualization #cluster2 div#longitude input");
   const cluster2Lat = document.querySelector("#visualization #cluster2 div#latitude input");
+  const cluster2Lon = document.querySelector("#visualization #cluster2 div#longitude input");
+
+  const spreadSlider = document.querySelector("input#spread");
 
   cluster1Lon.addEventListener("input", onSlide);
 
@@ -324,13 +327,17 @@ window.onload = function ()
 
   cluster2Lat.addEventListener("input", onSlide);
 
+  spreadSlider.addEventListener("input", onSlide);
+
   async function onSlide(ev) {
     const lat1 = parseFloat(cluster1Lat.value);
     const lon1 = parseFloat(cluster1Lon.value);
     const lat2 = parseFloat(cluster2Lat.value);
     const lon2 = parseFloat(cluster2Lon.value);
     const NumPairs = parseInt(PairsInput.value);
-    await GeneratePairsInBinaryWasm(NumPairs, lat1, lon1, lat2, lon2);
+    const spread = parseFloat(spreadSlider.value);
+
+    await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
     plotFromArray(window.state.lastComputation.pairs);
     const MeanHaversine = clusterHaversine(lat1, lon1, lat2, lon2);
     console.log(`lat1: ${lat1}, lon1: ${lon1}, lat2: ${lat2}, lon2: ${lon2}, MeanHaversine: ${MeanHaversine}`);
