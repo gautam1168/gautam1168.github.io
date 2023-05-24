@@ -27,6 +27,43 @@ typedef struct point
 
 // Imported random function from js
 extern "C" f32 random();
+extern "C" f32 sin(f32 Radians);
+extern "C" f32 cos(f32 Radians);
+extern "C" f32 asin(f32 Radians);
+extern "C" f32 sqrt(f32 Val);
+
+inline f32 
+Square(f32 A)
+{
+  return A * A;
+}
+
+f32 
+RadiansFromDegrees(f32 Degrees)
+{
+  f32 Result = 0.01745329251994329577f * Degrees;
+  return Result;
+}
+
+extern "C" f32
+Haversine(f32 X0, f32 Y0, f32 X1, f32 Y1, f32 Radius)
+{
+  f32 Lat1 = Y0;
+  f32 Lat2 = Y1;
+  f32 Lon1 = X0;
+  f32 Lon2 = X1;
+
+  f32 DLat = RadiansFromDegrees(Lat2 - Lat1);
+  f32 DLon = RadiansFromDegrees(Lon2 - Lon1);
+  Lat1 = RadiansFromDegrees(Lat1);
+  Lat2 = RadiansFromDegrees(Lat2);
+
+  f32 A = Square(sin(DLat/2.0f)) + cos(Lat1)*cos(Lat2)*Square(sin(DLon/2.0f));
+  f32 C = 2.0f*asin(sqrt(A));
+
+  f32 Result = Radius * C;
+  return Result;
+}
 
 void
 AddString(output_buffer *Buffer, const u8 *String)
@@ -50,11 +87,18 @@ AddNumber(output_buffer *Buffer, f32 Number)
   int Length = 0;
 
   s32 Whole = (s32)Number;
-  while (Whole > 0)
+  if (Whole == 0)
   {
-    u8 Digit = Whole % 10;
-    TempBuffer[Length++] = '0' + Digit;
-    Whole = Whole / 10;
+    TempBuffer[Length++] = '0';
+  }
+  else
+  {
+    while (Whole > 0)
+    {
+      u8 Digit = Whole % 10;
+      TempBuffer[Length++] = '0' + Digit;
+      Whole = Whole / 10;
+    }
   }
 
   int NumDigsBeforeDecimal = Length;
@@ -155,4 +199,23 @@ Generate(u8 *Memory, u32 NumPairs, u32 MaxMemory)
   AddString(Buffer, (const u8 *)"]}"); 
 
   return Buffer->Cursor;
+}
+
+extern "C" f32
+ComputeHaversines(u8 *Memory, s32 NumPairs, f32 Radius)
+{
+  int HaversinIndex = 0;
+  f32 *Coords = (f32 *)Memory;
+  f32 Mean = 0;
+  for (s32 CoordIndex = 0; CoordIndex < NumPairs * 4; CoordIndex += 4)
+  {
+    Coords[HaversinIndex] = Haversine(
+        Coords[CoordIndex], 
+        Coords[CoordIndex + 1], 
+        Coords[CoordIndex + 2], 
+        Coords[CoordIndex + 3],
+        Radius);
+    Mean += Coords[HaversinIndex++]/NumPairs;
+  }
+  return Mean;
 }

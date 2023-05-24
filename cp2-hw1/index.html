@@ -9,11 +9,37 @@
 			<a href="/index.html">Home</a>
 		</div>
     <div id="generation">
-      <input type="number"></input>
+      <input type="number" value=512></input>
       <button id="write-10k">Generate 10k</button>
+      <button id="write-binary">Write Binary</button>
     </div>
     <div id="visualization">
-      <button>Pick File</button>
+      <button id="picker">Pick File</button>
+      <button id="reset">Reset</button>
+      <div style="display: flex;">
+        <div style="width: 50%;" id="cluster1">
+          <h3 style="color: red;">Cluster 1</h3>
+          <div id="latitude">
+            Longitude 
+            <input style="width: 100%" type="range" min="-90" max="90" value="0" step="1"></input>
+          </div>
+          <div id="longitude">
+            Latitude 
+            <input style="width: 100%" type="range" min="-180" max="180" value="0" step="1"></input>
+          </div>
+        </div>
+        <div style="width: 50%;" id="cluster2">
+          <h3 style="color: green;">Cluster 2</h3>
+          <div id="latitude">
+            Longitude 
+            <input style="width: 100%" type="range" min="-90" max="90" value="0" step="1"></input>
+          </div>
+          <div id="longitude">
+            Latitude 
+            <input style="width: 100%" type="range" min="-180" max="180" value="0" step="1"></input>
+          </div>
+        </div>
+      </div>
       <div id="globeViz"></div>
     </div>
     <script src="//unpkg.com/globe.gl"></script>
