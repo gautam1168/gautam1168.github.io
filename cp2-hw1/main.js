@@ -224,9 +224,80 @@ function GeneratePairsInBinary(NumPairs)
   return Result;
 }
 
+function PagesForBytes(NumBytes)
+{
+  const BytesPerPage = 65536;
+  return Math.ceil(NumBytes / BytesPerPage);
+}
+
+async function GeneratePairsInBinaryWasm(NumPairs)
+{
+  const BytesPerBrace = 1;
+  const BytesPerQuote = 1;
+  const BytesPerColon = 1;
+  const BytesPerComma = 1;
+  const BytesPerCharacter = 1;
+  const BytesPerMantissa = 14;
+  const BytesPerSign = 1;
+  const BytesPerDecimal = 1;
+  const BytesPerNumber = BytesPerSign + 3 * BytesPerCharacter + BytesPerDecimal + BytesPerMantissa;
+  const BytesPerLabel = 2 * BytesPerQuote + 2 * BytesPerCharacter + BytesPerColon;
+  const BytesPerPair = 2 * BytesPerBrace + 4 * BytesPerLabel + 4 * BytesPerNumber + 3 * BytesPerComma;
+  const BytesForAllPairs = 2 * BytesPerBrace + NumPairs * BytesPerPair + (NumPairs - 1) * BytesPerComma;
+
+  const BytesForWordPairs = 5 * BytesPerCharacter + 2 * BytesPerQuote + BytesPerColon + 2 * BytesPerBrace;
+
+  const TotalBytesForJSON = BytesForWordPairs + BytesForAllPairs;
+  const SizeOfFloat = 4;
+  const TotalBytesForRandoms = 4 * NumPairs * SizeOfFloat;
+
+  const WasmMemory = new WebAssembly.Memory({ 
+    initial: PagesForBytes(TotalBytesForJSON + TotalBytesForRandoms) + 5 // 5pages for the program 
+  });
+
+  const importObject = {
+    env: {
+      memory: WasmMemory,
+      random: Math.random 
+    }
+  };
+
+  let instance;
+  try {
+    const module = await WebAssembly.instantiateStreaming(
+      fetch("./generate.wasm"), importObject
+    );
+    instance = module.instance;
+  } catch (err) {
+    console.error("Error in instantiating: ", err);
+  }
+  const BaseOffset = instance.exports.__heap_base;
+
+  const Cluster1 = { lat: 20, lon: 70};
+  const Cluster2 = { lat: -30, lon: -130};
+
+  const Coords = new Float32Array(WasmMemory.buffer, BaseOffset);
+  for (let CoordIndex = 0; CoordIndex < Coords.length; CoordIndex += 4)
+  {
+    // lon,lat,lon,lat
+    Coords[CoordIndex] = Cluster1.lon + (Math.random()*20 - 10); // Math.random()*80 - 40;
+    Coords[CoordIndex + 1] = Cluster1.lat + (Math.random()*20 - 10); // Math.random()*40;
+    Coords[CoordIndex + 2] = Cluster2.lon + (Math.random()*20 - 10); // Math.random()*80 - 40;
+    Coords[CoordIndex + 3] = Cluster2.lat + (Math.random()*20 - 10); // Math.random()*40;
+  }
+
+  
+  const MaxMemory = WasmMemory.buffer.byteLength - BaseOffset;
+  const JsonStringLength = instance.exports.Generate(BaseOffset, NumPairs, MaxMemory);
+  debugger
+  const Result = new Uint8Array(WasmMemory.buffer, BaseOffset + TotalBytesForRandoms, JsonStringLength);
+  return Result;
+}
+
 async function createAFile()
 {
   const DataPoints = document.querySelector("#generation input");
+  const NumPairs = parseInt(DataPoints.value);
 
   const FileHandle =  await window.showSaveFilePicker();
   const WritableStream = await FileHandle.createWritable();
@@ -234,7 +305,7 @@ async function createAFile()
   {
     const DefaultWriter = WritableStream.getWriter();
     await DefaultWriter.ready;
-    const DataBuffer = GeneratePairsInBinary(DataPoints.value);
+    const DataBuffer = await GeneratePairsInBinaryWasm(NumPairs);
     DefaultWriter.write(DataBuffer);
     await DefaultWriter.ready;
     DefaultWriter.close();
@@ -243,7 +314,7 @@ async function createAFile()
   else
   {
     await WritableStream.write('{"pairs": [');
-    const Points = generateCoordinatePairs(DataPoints.value);
+    const Points = generateCoordinatePairs(NumPairs);
     await WritableStream.write(Points);
     await WritableStream.write(']}');
     await WritableStream.close();
@@ -276,8 +347,9 @@ async function showFileContents()
 window.onload = function ()
 {
   let button = document.querySelector("#generation button#write-10k");
-  button.addEventListener("click", () => setAndCreate(1 << 20));
+  button.addEventListener("click", () => setAndCreate(1 << 24));
   
   button = document.querySelector("#visualization button");
   button.addEventListener("click", showFileContents);
 }
+
