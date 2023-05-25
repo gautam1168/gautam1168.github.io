@@ -48,22 +48,22 @@ function plotData(Data)
   {
     const Points = (Data.pairs.slice(0, 1 << 12)).flatMap(pair => [
       {
-        lat: pair.x0,
-        lng: pair.y0,
+        lat: pair.y0,
+        lng: pair.x0,
         size: 0.01,
         color: "#ff0000"
       },
       {
-        lat: pair.x1,
-        lng: pair.y1,
+        lat: pair.y1,
+        lng: pair.x1,
         size: 0.01,
         color: "#00ff00"
       }
     ]);
     
       globe
-        .width(500)
-        .height(500)
+        .width(800)
+        .height(800)
         .pointsData(Points)
         .pointAltitude('size')
         .pointColor('color')
@@ -80,15 +80,15 @@ function plotFromArray(Data)
   for (let CoordIndex = 0; CoordIndex < Data.length; CoordIndex += 4)
   {
     Points[PointIndex++] = {
-      lat: Data[CoordIndex],
-      lng: Data[CoordIndex + 1],
+      lng: Data[CoordIndex],
+      lat: Data[CoordIndex + 1],
       size: 0.01,
       color: "#ff0000"
     };
 
     Points[PointIndex++] = {
-      lat: Data[CoordIndex + 2],
-      lng: Data[CoordIndex + 3],
+      lng: Data[CoordIndex + 2],
+      lat: Data[CoordIndex + 3],
       size: 0.01,
       color: "#00ff00"
     };
@@ -312,10 +312,16 @@ window.onload = function ()
   const PairsInput = document.querySelector("#generation input");
 
   const cluster1Lat = document.querySelector("#visualization #cluster1 div#latitude input");
+  const cluster1LatLabel = document.querySelector("#visualization #cluster1 div#latitude span");
+
   const cluster1Lon = document.querySelector("#visualization #cluster1 div#longitude input");
+  const cluster1LonLabel = document.querySelector("#visualization #cluster1 div#longitude span");
 
   const cluster2Lat = document.querySelector("#visualization #cluster2 div#latitude input");
+  const cluster2LatLabel = document.querySelector("#visualization #cluster2 div#latitude span");
+
   const cluster2Lon = document.querySelector("#visualization #cluster2 div#longitude input");
+  const cluster2LonLabel = document.querySelector("#visualization #cluster2 div#longitude span");
 
   const spreadSlider = document.querySelector("input#spread");
 
@@ -331,9 +337,17 @@ window.onload = function ()
 
   async function onSlide(ev) {
     const lat1 = parseFloat(cluster1Lat.value);
+    cluster1LatLabel.innerText = lat1;
+
     const lon1 = parseFloat(cluster1Lon.value);
+    cluster1LonLabel.innerText = lon1;
+
     const lat2 = parseFloat(cluster2Lat.value);
+    cluster2LatLabel.innerText = lat2;
+
     const lon2 = parseFloat(cluster2Lon.value);
+    cluster2LonLabel.innerText = lon2;
+
     const NumPairs = parseInt(PairsInput.value);
     const spread = parseFloat(spreadSlider.value);
 
