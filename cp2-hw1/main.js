@@ -278,7 +278,12 @@ function clusterHaversine(lat1, lon1, lat2, lon2)
   if (window.state.lastComputation.numPairs)
   {
     const instance = window.state.lastComputation.instance;
-    const floatView = new Float32Array(instance.exports.wasmMemory, instance.exports.__heap_base);
+    const floatView = new Float32Array(
+      window.state.lastComputation.wasmMemory.buffer,
+      instance.exports.__heap_base, 
+      4
+    );
+
     floatView[0] = lon1;
     floatView[1] = lat1;
     floatView[2] = lon2;
@@ -354,7 +359,7 @@ window.onload = function ()
     await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
     plotFromArray(window.state.lastComputation.pairs);
     const MeanHaversine = clusterHaversine(lat1, lon1, lat2, lon2);
-    console.log(`lat1: ${lat1}, lon1: ${lon1}, lat2: ${lat2}, lon2: ${lon2}, MeanHaversine: ${MeanHaversine}`);
+    console.log(`lat1: ${lat1}, lon1: ${lon1}, lat2: ${lat2}, lon2: ${lon2}, HaverSine between cluster centers: ${MeanHaversine}`);
   }
 }
 
