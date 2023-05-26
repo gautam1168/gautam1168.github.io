@@ -206,6 +206,125 @@ async function GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon
   return Result;
 }
 
+async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
+{
+  const adapter = await navigator.gpu?.requestAdapter();
+  const device = await adapter?.requestDevice();
+  if (!device)
+  {
+    alert("This browser does not support webgpu");
+    return;
+  }
+
+  const doublingShader = await fetch("./generate.wgsl").then(res => res.text());
+
+  const module = device.createShaderModule({
+    label: 'doubling shader',
+    code: doublingShader 
+  });
+
+  const pipeline = device.createComputePipeline({
+    label: 'doubling pipeline',
+    layout: 'auto',
+    compute: {
+      module,
+      entryPoint: 'computeSomething'
+    }
+  });
+
+  const LineLength = 25; // words, where each word is 4 characters
+
+  const input = new Uint32Array(LineLength * NumLines);
+  const workBuffer = device.createBuffer({
+    label: 'work buffer',
+    size: input.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+  });
+  device.queue.writeBuffer(workBuffer, 0, input);
+
+  const randomNums = new Float32Array(4 * NumLines);
+  for (let Index = 0; Index < 4 * NumLines; ++Index)
+  {
+    randomNums[Index] = Math.random();
+  }
+  const randBuffer = device.createBuffer({
+    label: 'random number buffer',
+    size: randomNums.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+  });
+  device.queue.writeBuffer(randBuffer, 0, randomNums);
+
+  const clusterConfig = new Float32Array([lon1, lat1, spread, lon2, lat2, spread]);
+  const clusterBuffer = device.createBuffer({
+    label: 'cluster buffer',
+    size: clusterConfig.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+  });
+  device.queue.writeBuffer(clusterBuffer, 0, clusterConfig);
+
+  const resultBuffer = device.createBuffer({
+    label: 'result buffer',
+    size: input.byteLength,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+  });
+
+  const bindGroup = device.createBindGroup({
+    label: 'bindGroup for work buffer',
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { 
+        binding: 0, 
+        resource: { 
+          buffer: workBuffer 
+        }
+      },
+      {
+        binding: 1,
+        resource: {
+          buffer: randBuffer
+        }
+      },
+      {
+        binding: 2,
+        resource: {
+          buffer: clusterBuffer
+        }
+      }
+    ]
+  });
+
+  const encoder = device.createCommandEncoder({
+    label: 'doubling encoder'
+  });
+
+  const pass = encoder.beginComputePass({
+    label: 'doubling compute pass'
+  });
+
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(0, bindGroup);
+  pass.dispatchWorkgroups(NumLines);
+  pass.end();
+
+  encoder.copyBufferToBuffer(workBuffer, 0, resultBuffer, 0, resultBuffer.size);
+
+  const commandBuffer = encoder.finish();
+  device.queue.submit([commandBuffer]);
+
+  await resultBuffer.mapAsync(GPUMapMode.READ);
+  let result = new Uint32Array(resultBuffer.getMappedRange().slice());
+  result = new Uint8Array(result.buffer); 
+  resultBuffer.unmap();
+
+  console.log("input: ", input);
+  const characters = []; 
+  for (let i = 0; i < result.length; ++i)
+  {
+    characters.push(result[i]);
+  }
+  console.log("result: ", result, String.fromCharCode.apply(null, characters));
+}
+
 async function createAFile()
 {
   const DataPoints = document.querySelector("#generation input");
@@ -357,6 +476,7 @@ window.onload = function ()
     const spread = parseFloat(spreadSlider.value);
 
     await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
+    GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);
     plotFromArray(window.state.lastComputation.pairs);
     const MeanHaversine = clusterHaversine(lat1, lon1, lat2, lon2);
     console.log(`lat1: ${lat1}, lon1: ${lon1}, lat2: ${lat2}, lon2: ${lon2}, HaverSine between cluster centers: ${MeanHaversine}`);
