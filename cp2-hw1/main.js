@@ -248,23 +248,24 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2, Defaul
 
   const LineLength = 23; // words, where each word is 4 characters
 
-  const MaxBufferSize = 1 << 28;
-  const RequiredOutputSize = LineLength * 4 * NumLines;
+  let jsonText;
+  const MaxBufferSize = 1 << 27;
+  let RequiredOutputSize = LineLength * NumLines;
+  if (RequiredOutputSize * 4 >= MaxBufferSize)
+  {
+    jsonText = new Uint32Array(MaxBufferSize / 4);
+  }
+  else
+  {
+    jsonText = new Uint32Array(RequiredOutputSize);
+  }
 
-  const jsonText = new Uint32Array(RequiredOutputSize);
   const characterBuffer = device.createBuffer({
     label: 'work buffer',
     size: jsonText.byteLength,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC // | GPUBufferUsage.COPY_DST
   });
   // device.queue.writeBuffer(characterBuffer, 0, jsonText);
-
-  let NumPayloadsNeeded = 1;
-  if (RequiredOutputSize > MaxBufferSize)
-  {
-    NumPayloadsNeeded = Math.ceil(RequiredOutputSize / MaxBufferSize);
-    alert("Can't do it! Will need " + NumPayloadsNeeded);
-  }
 
   const randomNums = new Float32Array(4 * NumLines);
   for (let Index = 0; Index < 4 * NumLines; ++Index)
@@ -277,7 +278,6 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2, Defaul
     size: randomNums.byteLength,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
   });
-  device.queue.writeBuffer(randBuffer, 0, randomNums);
 
   const clusterConfig = new Float32Array([lon1, lat1, spread, lon2, lat2, spread]);
   const clusterBuffer = device.createBuffer({
@@ -285,14 +285,12 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2, Defaul
     size: clusterConfig.byteLength,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
   });
-  device.queue.writeBuffer(clusterBuffer, 0, clusterConfig);
 
   const parametersBuffer = device.createBuffer({
     label: 'parameters buffer',
     size: 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
   });
-  device.queue.writeBuffer(parametersBuffer, 0, new Uint32Array([NumLines]));
 
   const bindGroup = device.createBindGroup({
     label: 'bindGroup for work buffer',
@@ -325,47 +323,63 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2, Defaul
     ]
   });
 
-  const encoder = device.createCommandEncoder({
-    label: 'doubling encoder'
-  });
-
-  const pass = encoder.beginComputePass({
-    label: 'doubling compute pass'
-  });
-
-  pass.setPipeline(pipeline);
-  pass.setBindGroup(0, bindGroup);
-  const NumTimesToExecuteShader = NumLines > 65536 ? Math.ceil(NumLines / 256) : 1;
-  pass.dispatchWorkgroups(NumTimesToExecuteShader);
-  pass.end();
-
   const resultBuffer = device.createBuffer({
     label: 'result buffer',
     size: jsonText.byteLength,
     usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
   });
 
-  encoder.copyBufferToBuffer(characterBuffer, 0, resultBuffer, 0, resultBuffer.size);
-
-  const commandBuffer = encoder.finish();
-  device.queue.submit([commandBuffer]);
-
-  await resultBuffer.mapAsync(GPUMapMode.READ);
-  let result = new Uint32Array(resultBuffer.getMappedRange().slice());
-  const DataBuffer = new Uint8Array(result.buffer); 
-  resultBuffer.unmap();
-
   await DefaultWriter.ready;
   DefaultWriter.write(new Uint8Array([
     D['{'], D['"'], D['p'], D['a'], D['i'], D['r'], D['s'], D['"'],
     D[':'], D['[']
   ]));
+
+  let NumPayloadsNeeded = 1;
+  if (RequiredOutputSize * 4 > MaxBufferSize)
+  {
+    NumPayloadsNeeded = Math.ceil((RequiredOutputSize * 4) / MaxBufferSize);
+    // alert("Will run " + NumPayloadsNeeded + " payloads!");
+  }
+
+  let DataBuffer;
+  for (let IterationIndex = 0; IterationIndex < NumPayloadsNeeded; ++IterationIndex)
+  {
+    const encoder = device.createCommandEncoder({
+      label: 'doubling encoder'
+    });
+
+    const pass = encoder.beginComputePass({
+      label: 'doubling compute pass'
+    });
+
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    const NumTimesToExecuteShader = NumLines > 65536 ? Math.ceil(NumLines / 256) : 1;
+    pass.dispatchWorkgroups(NumTimesToExecuteShader);
+    pass.end();
+
+    encoder.copyBufferToBuffer(characterBuffer, 0, resultBuffer, 0, resultBuffer.size);
+    const commandBuffer = encoder.finish();
+
+    device.queue.writeBuffer(randBuffer, 0, randomNums);
+    device.queue.writeBuffer(clusterBuffer, 0, clusterConfig);
+    device.queue.writeBuffer(parametersBuffer, 0, new Uint32Array([NumLines]));
+    device.queue.submit([commandBuffer]);
+
+    await resultBuffer.mapAsync(GPUMapMode.READ);
+    const result = new Uint32Array(resultBuffer.getMappedRange().slice());
+    DataBuffer = new Uint8Array(result.buffer); 
+    resultBuffer.unmap();
+  }
+  
   let LastIndex = DataBuffer.length - 1;
   const comma = ','.charCodeAt();
   while (DataBuffer[LastIndex] != comma)
   {
     LastIndex--;
   }
+
   DataBuffer[LastIndex] = ' '.charCodeAt();
 
   await DefaultWriter.ready;
@@ -373,8 +387,6 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2, Defaul
 
   await DefaultWriter.ready;
   DefaultWriter.write(new Uint8Array([D[']'], D['}']]));
-
-  return result;
 }
 
 async function createAFile()
@@ -413,8 +425,9 @@ async function createAFile()
   await DefaultWriter.ready;
   DefaultWriter.close();
   const EndTime = performance.now();
-  console.log("Time: " + (EndTime - StartTime)/1000);
-  alert("Finished!");
+  const TimeSpent = (EndTime - StartTime)/1000;
+  console.log("Time: " + TimeSpent);
+  alert("Finished in: " + TimeSpent);
 }
 
 async function showFileContents()
