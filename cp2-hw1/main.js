@@ -361,17 +361,48 @@ async function createAFile()
   const FileHandle =  await window.showSaveFilePicker();
   const WritableStream = await FileHandle.createWritable();
   const DefaultWriter = WritableStream.getWriter();
-  await DefaultWriter.ready;
+  const D = {
+    '{': '{'.charCodeAt(),
+    '"': '"'.charCodeAt(),
+    'p': 'p'.charCodeAt(),
+    'a': 'a'.charCodeAt(),
+    'i': 'i'.charCodeAt(),
+    'r': 'r'.charCodeAt(),
+    's': 's'.charCodeAt(),
+    ':': ':'.charCodeAt(),
+    '}': '}'.charCodeAt(),
+    '[': '['.charCodeAt(),
+    ']': ']'.charCodeAt(),
+  };
+
   const StartTime = performance.now();
   if (false) 
   {
     const DataBuffer = await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
+    await DefaultWriter.ready;
     DefaultWriter.write(DataBuffer);
   }
   else
   {
-    const DataBuffer = await GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);
+    const genPromise = await GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);
+    await DefaultWriter.ready;
+    DefaultWriter.write(new Uint8Array([
+      D['{'], D['"'], D['p'], D['a'], D['i'], D['r'], D['s'], D['"'],
+      D[':'], D['[']
+    ]));
+    const DataBuffer = await genPromise;
+    let LastIndex = DataBuffer.length - 1;
+    const comma = ','.charCodeAt();
+    while (DataBuffer[LastIndex] != comma)
+    {
+      LastIndex--;
+    }
+    DataBuffer[LastIndex] = ' '.charCodeAt();
+
+    await DefaultWriter.ready;
     DefaultWriter.write(DataBuffer);
+    await DefaultWriter.ready;
+    DefaultWriter.write(new Uint8Array([D[']'], D['}']]));
   }
 
   await DefaultWriter.ready;
