@@ -246,22 +246,32 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2, Defaul
     }
   });
 
-  const LineLength = 25; // words, where each word is 4 characters
+  const LineLength = 23; // words, where each word is 4 characters
 
   const MaxBufferSize = 1 << 28;
-  const jsonText = new Uint32Array(LineLength * NumLines);
+  const RequiredOutputSize = LineLength * 4 * NumLines;
+
+  const jsonText = new Uint32Array(RequiredOutputSize);
   const characterBuffer = device.createBuffer({
     label: 'work buffer',
     size: jsonText.byteLength,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC // | GPUBufferUsage.COPY_DST
   });
-  device.queue.writeBuffer(characterBuffer, 0, jsonText);
+  // device.queue.writeBuffer(characterBuffer, 0, jsonText);
+
+  let NumPayloadsNeeded = 1;
+  if (RequiredOutputSize > MaxBufferSize)
+  {
+    NumPayloadsNeeded = Math.ceil(RequiredOutputSize / MaxBufferSize);
+    alert("Can't do it! Will need " + NumPayloadsNeeded);
+  }
 
   const randomNums = new Float32Array(4 * NumLines);
   for (let Index = 0; Index < 4 * NumLines; ++Index)
   {
     randomNums[Index] = Math.random();
   }
+
   const randBuffer = device.createBuffer({
     label: 'random number buffer',
     size: randomNums.byteLength,

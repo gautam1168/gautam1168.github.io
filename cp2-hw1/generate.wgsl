@@ -10,7 +10,7 @@ struct cluster
 @group(0) @binding(2) var<storage, read> Cluster: array<cluster>;
 @group(0) @binding(3) var<storage, read> Parameters: array<u32>;
 
-const LineLength: u32 = 25;
+const LineLength: u32 = 23;
 
 const char_x: u32 = 120;
 const char_y: u32 = 121;
@@ -62,7 +62,7 @@ fn GetDigits(Number: f32) -> array<u32, 16>
   TempBuffer[Cursor] = char_dot;
   Cursor += 1;
 
-  var DecimalDigs:u32 = u32(FractAndWhole.fract * 100000000);
+  var DecimalDigs:u32 = u32(FractAndWhole.fract * 1000000000);
   for (;(DecimalDigs > 0 && Cursor < 16);)
   {
     var Digit: u32 = DecimalDigs % 10;
