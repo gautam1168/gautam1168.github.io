@@ -206,8 +206,22 @@ async function GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon
   return Result;
 }
 
-async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
+async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2, DefaultWriter)
 {
+  const D = {
+    '{': '{'.charCodeAt(),
+    '"': '"'.charCodeAt(),
+    'p': 'p'.charCodeAt(),
+    'a': 'a'.charCodeAt(),
+    'i': 'i'.charCodeAt(),
+    'r': 'r'.charCodeAt(),
+    's': 's'.charCodeAt(),
+    ':': ':'.charCodeAt(),
+    '}': '}'.charCodeAt(),
+    '[': '['.charCodeAt(),
+    ']': ']'.charCodeAt(),
+  };
+
   const adapter = await navigator.gpu?.requestAdapter();
   const device = await adapter?.requestDevice();
   if (!device)
@@ -234,6 +248,7 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
 
   const LineLength = 25; // words, where each word is 4 characters
 
+  const MaxBufferSize = 1 << 28;
   const jsonText = new Uint32Array(LineLength * NumLines);
   const characterBuffer = device.createBuffer({
     label: 'work buffer',
@@ -327,17 +342,27 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
 
   await resultBuffer.mapAsync(GPUMapMode.READ);
   let result = new Uint32Array(resultBuffer.getMappedRange().slice());
-  result = new Uint8Array(result.buffer); 
+  const DataBuffer = new Uint8Array(result.buffer); 
   resultBuffer.unmap();
 
-  /*
-  const characters = []; 
-  for (let i = 0; i < result.length; ++i)
+  await DefaultWriter.ready;
+  DefaultWriter.write(new Uint8Array([
+    D['{'], D['"'], D['p'], D['a'], D['i'], D['r'], D['s'], D['"'],
+    D[':'], D['[']
+  ]));
+  let LastIndex = DataBuffer.length - 1;
+  const comma = ','.charCodeAt();
+  while (DataBuffer[LastIndex] != comma)
   {
-    characters.push(result[i]);
+    LastIndex--;
   }
-  console.log("result: ", result, '[' + String.fromCharCode.apply(null, characters) + ']');
-  */
+  DataBuffer[LastIndex] = ' '.charCodeAt();
+
+  await DefaultWriter.ready;
+  DefaultWriter.write(DataBuffer);
+
+  await DefaultWriter.ready;
+  DefaultWriter.write(new Uint8Array([D[']'], D['}']]));
 
   return result;
 }
@@ -361,19 +386,6 @@ async function createAFile()
   const FileHandle =  await window.showSaveFilePicker();
   const WritableStream = await FileHandle.createWritable();
   const DefaultWriter = WritableStream.getWriter();
-  const D = {
-    '{': '{'.charCodeAt(),
-    '"': '"'.charCodeAt(),
-    'p': 'p'.charCodeAt(),
-    'a': 'a'.charCodeAt(),
-    'i': 'i'.charCodeAt(),
-    'r': 'r'.charCodeAt(),
-    's': 's'.charCodeAt(),
-    ':': ':'.charCodeAt(),
-    '}': '}'.charCodeAt(),
-    '[': '['.charCodeAt(),
-    ']': ']'.charCodeAt(),
-  };
 
   const StartTime = performance.now();
   if (false) 
@@ -384,25 +396,8 @@ async function createAFile()
   }
   else
   {
-    const genPromise = await GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);
-    await DefaultWriter.ready;
-    DefaultWriter.write(new Uint8Array([
-      D['{'], D['"'], D['p'], D['a'], D['i'], D['r'], D['s'], D['"'],
-      D[':'], D['[']
-    ]));
-    const DataBuffer = await genPromise;
-    let LastIndex = DataBuffer.length - 1;
-    const comma = ','.charCodeAt();
-    while (DataBuffer[LastIndex] != comma)
-    {
-      LastIndex--;
-    }
-    DataBuffer[LastIndex] = ' '.charCodeAt();
-
-    await DefaultWriter.ready;
-    DefaultWriter.write(DataBuffer);
-    await DefaultWriter.ready;
-    DefaultWriter.write(new Uint8Array([D[']'], D['}']]));
+    await GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2, DefaultWriter);
+    
   }
 
   await DefaultWriter.ready;
@@ -535,7 +530,6 @@ window.onload = function ()
     const NumPairs = parseInt(PairsInput.value);
     const spread = parseFloat(spreadSlider.value);
 
-    // await GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);   
     await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
     plotFromArray(window.state.lastComputation.pairs);
     const MeanHaversine = clusterHaversine(lat1, lon1, lat2, lon2);
