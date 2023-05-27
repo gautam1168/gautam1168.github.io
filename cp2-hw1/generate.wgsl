@@ -8,6 +8,7 @@ struct cluster
 @group(0) @binding(0) var<storage, read_write> characters: array<u32>;
 @group(0) @binding(1) var<storage, read> random: array<f32>;
 @group(0) @binding(2) var<storage, read> Cluster: array<cluster>;
+@group(0) @binding(3) var<storage, read> Parameters: array<u32>;
 
 const LineLength: u32 = 25;
 
@@ -71,7 +72,6 @@ fn GetDigits(Number: f32) -> array<u32, 16>
   }
 
   var Result = array<u32, 16>();
-
   var ResultCursor: u32 = 0;
   for (var Index = NumDigsBeforeDecimal - 1; 
     Index > 0; 
@@ -95,6 +95,11 @@ fn GetDigits(Number: f32) -> array<u32, 16>
     ResultCursor += 1;
   }
 
+  for (;ResultCursor < 16; ResultCursor += 1)
+  {
+    Result[ResultCursor] = 32;
+  }
+
   return Result;
 }
 
@@ -103,74 +108,84 @@ fn writeToData(offset: u32, word1: u32, word2: u32, word3: u32, word4: u32)
   characters[offset] = (word4 << 24) | (word3 << 16) | (word2 << 8) | word1;
 }
 
-@compute @workgroup_size(1) fn computeSomething(
+@compute @workgroup_size(256) fn computeSomething(
   @builtin(global_invocation_id) id: vec3<u32>
 )
 {
-  var randomOffset = id.x * 4;
-  var offset = id.x * LineLength;
+  var NumLines = Parameters[0];
+  let StartIndex = id.x * 256;
 
-  writeToData(offset, char_openbrace, char_quot, char_x, dig_0);
-  offset += 1;
-  var Digits = GetDigits(Cluster[0].Lon + (random[randomOffset]*2*Cluster[0].Spread - Cluster[0].Spread));
-  randomOffset += 1;
-  writeToData(offset, char_quot, char_colon, Digits[0], Digits[1]);
-  offset += 1;
-  writeToData(offset, Digits[2], Digits[3], Digits[4], Digits[5]);
-  offset += 1;
-  writeToData(offset, Digits[6], Digits[7], Digits[8], Digits[9]);
-  offset += 1;
-  writeToData(offset, Digits[10], Digits[11], Digits[12], Digits[13]);
-  offset += 1;
-  writeToData(offset, Digits[14], Digits[15], char_comma, char_quot);
-  offset += 1;
-  writeToData(offset, char_y, dig_0, char_quot, char_colon);
-  offset += 1;
-
-  Digits = GetDigits(Cluster[0].Lat + (random[randomOffset]*2*Cluster[0].Spread - Cluster[0].Spread));
-  randomOffset += 1;
-  writeToData(offset, Digits[0], Digits[1], Digits[2], Digits[3]);
-  offset += 1;
-  writeToData(offset, Digits[4], Digits[5], Digits[6], Digits[7]);
-  offset += 1;
-  writeToData(offset, Digits[8], Digits[9], Digits[10], Digits[11]);
-  offset += 1;
-  writeToData(offset, Digits[12], Digits[13], Digits[14], Digits[15]);
-  offset += 1;
-  writeToData(offset, char_comma, char_quot, char_x, dig_0 + 1);
-  offset += 1;
-
-  Digits = GetDigits(Cluster[1].Lon + (random[randomOffset]*2*Cluster[1].Spread - Cluster[1].Spread));
-  randomOffset += 1;
-  writeToData(offset, char_quot, char_colon, Digits[0], Digits[1]);
-  offset += 1;
-  writeToData(offset, Digits[2], Digits[3], Digits[4], Digits[5]); 
-  offset += 1;
-  writeToData(offset, Digits[6], Digits[7], Digits[8], Digits[9]);
-  offset += 1;
-  writeToData(offset, Digits[10], Digits[11], Digits[12], Digits[13]);
-  offset += 1;
-  writeToData(offset, Digits[14], Digits[15], char_comma, char_quot);
-  offset += 1;
-  writeToData(offset, char_y, dig_0 + 1, char_quot, char_colon);
-  offset += 1;
-
-  Digits = GetDigits(Cluster[1].Lat + (random[randomOffset]*2*Cluster[1].Spread - Cluster[1].Spread));
-  randomOffset += 1;
-  writeToData(offset, Digits[0], Digits[1], Digits[2], Digits[3]);
-  offset += 1;
-  writeToData(offset, Digits[4], Digits[5], Digits[6], Digits[7]);
-  offset += 1;
-  writeToData(offset, Digits[8], Digits[9], Digits[10], Digits[11]);
-  offset += 1;
-  writeToData(offset, Digits[12], Digits[13], Digits[14], Digits[15]);
-  offset += 1;
-  writeToData(offset, char_closebrace, char_comma, char_space, char_space);
-  offset += 1;
-
-  for (var index: u32 = offset; index < (id.x + 1) * LineLength; index = index + 1)
+  for (var Index = StartIndex; Index < StartIndex + 256; Index += 1)
   {
-    writeToData(offset, char_space, char_space, char_space, char_space);
+    var offset = Index * LineLength;
+    if (offset >= NumLines * LineLength)
+    {
+      return;
+    }
+    var randomOffset = Index * 4;
+
+    writeToData(offset, char_openbrace, char_quot, char_x, dig_0);
     offset += 1;
+    var Digits = GetDigits(Cluster[0].Lon + (random[randomOffset]*2*Cluster[0].Spread - Cluster[0].Spread));
+    randomOffset += 1;
+    writeToData(offset, char_quot, char_colon, Digits[0], Digits[1]);
+    offset += 1;
+    writeToData(offset, Digits[2], Digits[3], Digits[4], Digits[5]);
+    offset += 1;
+    writeToData(offset, Digits[6], Digits[7], Digits[8], Digits[9]);
+    offset += 1;
+    writeToData(offset, Digits[10], Digits[11], Digits[12], Digits[13]);
+    offset += 1;
+    writeToData(offset, Digits[14], Digits[15], char_comma, char_quot);
+    offset += 1;
+    writeToData(offset, char_y, dig_0, char_quot, char_colon);
+    offset += 1;
+
+    Digits = GetDigits(Cluster[0].Lat + (random[randomOffset]*2*Cluster[0].Spread - Cluster[0].Spread));
+    randomOffset += 1;
+    writeToData(offset, Digits[0], Digits[1], Digits[2], Digits[3]);
+    offset += 1;
+    writeToData(offset, Digits[4], Digits[5], Digits[6], Digits[7]);
+    offset += 1;
+    writeToData(offset, Digits[8], Digits[9], Digits[10], Digits[11]);
+    offset += 1;
+    writeToData(offset, Digits[12], Digits[13], Digits[14], Digits[15]);
+    offset += 1;
+    writeToData(offset, char_comma, char_quot, char_x, dig_0 + 1);
+    offset += 1;
+
+    Digits = GetDigits(Cluster[1].Lon + (random[randomOffset]*2*Cluster[1].Spread - Cluster[1].Spread));
+    randomOffset += 1;
+    writeToData(offset, char_quot, char_colon, Digits[0], Digits[1]);
+    offset += 1;
+    writeToData(offset, Digits[2], Digits[3], Digits[4], Digits[5]); 
+    offset += 1;
+    writeToData(offset, Digits[6], Digits[7], Digits[8], Digits[9]);
+    offset += 1;
+    writeToData(offset, Digits[10], Digits[11], Digits[12], Digits[13]);
+    offset += 1;
+    writeToData(offset, Digits[14], Digits[15], char_comma, char_quot);
+    offset += 1;
+    writeToData(offset, char_y, dig_0 + 1, char_quot, char_colon);
+    offset += 1;
+
+    Digits = GetDigits(Cluster[1].Lat + (random[randomOffset]*2*Cluster[1].Spread - Cluster[1].Spread));
+    randomOffset += 1;
+    writeToData(offset, Digits[0], Digits[1], Digits[2], Digits[3]);
+    offset += 1;
+    writeToData(offset, Digits[4], Digits[5], Digits[6], Digits[7]);
+    offset += 1;
+    writeToData(offset, Digits[8], Digits[9], Digits[10], Digits[11]);
+    offset += 1;
+    writeToData(offset, Digits[12], Digits[13], Digits[14], Digits[15]);
+    offset += 1;
+    writeToData(offset, char_closebrace, char_comma, char_space, char_space);
+    offset += 1;
+
+    for (var index: u32 = offset; index < (Index + 1) * LineLength; index = index + 1)
+    {
+      writeToData(offset, char_space, char_space, char_space, char_space);
+      offset += 1;
+    }
   }
 }

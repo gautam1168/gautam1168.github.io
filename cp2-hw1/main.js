@@ -107,11 +107,11 @@ function resetPoints()
     .pointsData([]);
 }
 
-function setAndCreate()
+async function setAndCreate()
 {
   const DatapointsInput = document.querySelector("#generation input");
   NumPoints = DatapointsInput.value;
-  createAFile();
+  await createAFile();
 }
 
 function PagesForBytes(NumBytes)
@@ -234,13 +234,13 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
 
   const LineLength = 25; // words, where each word is 4 characters
 
-  const input = new Uint32Array(LineLength * NumLines);
-  const workBuffer = device.createBuffer({
+  const jsonText = new Uint32Array(LineLength * NumLines);
+  const characterBuffer = device.createBuffer({
     label: 'work buffer',
-    size: input.byteLength,
+    size: jsonText.byteLength,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
   });
-  device.queue.writeBuffer(workBuffer, 0, input);
+  device.queue.writeBuffer(characterBuffer, 0, jsonText);
 
   const randomNums = new Float32Array(4 * NumLines);
   for (let Index = 0; Index < 4 * NumLines; ++Index)
@@ -262,11 +262,12 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
   });
   device.queue.writeBuffer(clusterBuffer, 0, clusterConfig);
 
-  const resultBuffer = device.createBuffer({
-    label: 'result buffer',
-    size: input.byteLength,
-    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+  const parametersBuffer = device.createBuffer({
+    label: 'parameters buffer',
+    size: 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
   });
+  device.queue.writeBuffer(parametersBuffer, 0, new Uint32Array([NumLines]));
 
   const bindGroup = device.createBindGroup({
     label: 'bindGroup for work buffer',
@@ -275,7 +276,7 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
       { 
         binding: 0, 
         resource: { 
-          buffer: workBuffer 
+          buffer: characterBuffer 
         }
       },
       {
@@ -288,6 +289,12 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
         binding: 2,
         resource: {
           buffer: clusterBuffer
+        }
+      },
+      {
+        binding: 3,
+        resource: {
+          buffer: parametersBuffer
         }
       }
     ]
@@ -303,10 +310,17 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
 
   pass.setPipeline(pipeline);
   pass.setBindGroup(0, bindGroup);
-  pass.dispatchWorkgroups(NumLines);
+  const NumTimesToExecuteShader = NumLines > 65536 ? Math.ceil(NumLines / 256) : 1;
+  pass.dispatchWorkgroups(NumTimesToExecuteShader);
   pass.end();
 
-  encoder.copyBufferToBuffer(workBuffer, 0, resultBuffer, 0, resultBuffer.size);
+  const resultBuffer = device.createBuffer({
+    label: 'result buffer',
+    size: jsonText.byteLength,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+  });
+
+  encoder.copyBufferToBuffer(characterBuffer, 0, resultBuffer, 0, resultBuffer.size);
 
   const commandBuffer = encoder.finish();
   device.queue.submit([commandBuffer]);
@@ -316,13 +330,16 @@ async function GeneratePairsGPU(NumLines, spread, lat1, lon1, lat2, lon2)
   result = new Uint8Array(result.buffer); 
   resultBuffer.unmap();
 
-  console.log("input: ", input);
+  /*
   const characters = []; 
   for (let i = 0; i < result.length; ++i)
   {
     characters.push(result[i]);
   }
-  console.log("result: ", result, String.fromCharCode.apply(null, characters));
+  console.log("result: ", result, '[' + String.fromCharCode.apply(null, characters) + ']');
+  */
+
+  return result;
 }
 
 async function createAFile()
@@ -345,10 +362,22 @@ async function createAFile()
   const WritableStream = await FileHandle.createWritable();
   const DefaultWriter = WritableStream.getWriter();
   await DefaultWriter.ready;
-  const DataBuffer = await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
-  DefaultWriter.write(DataBuffer);
+  const StartTime = performance.now();
+  if (false) 
+  {
+    const DataBuffer = await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
+    DefaultWriter.write(DataBuffer);
+  }
+  else
+  {
+    const DataBuffer = await GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);
+    DefaultWriter.write(DataBuffer);
+  }
+
   await DefaultWriter.ready;
   DefaultWriter.close();
+  const EndTime = performance.now();
+  console.log("Time: " + (EndTime - StartTime)/1000);
   alert("Finished!");
 }
 
@@ -475,8 +504,8 @@ window.onload = function ()
     const NumPairs = parseInt(PairsInput.value);
     const spread = parseFloat(spreadSlider.value);
 
+    // await GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);   
     await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
-    GeneratePairsGPU(NumPairs, spread, lat1, lon1, lat2, lon2);
     plotFromArray(window.state.lastComputation.pairs);
     const MeanHaversine = clusterHaversine(lat1, lon1, lat2, lon2);
     console.log(`lat1: ${lat1}, lon1: ${lon1}, lat2: ${lat2}, lon2: ${lon2}, HaverSine between cluster centers: ${MeanHaversine}`);
