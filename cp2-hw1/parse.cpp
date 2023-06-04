@@ -629,7 +629,7 @@ main(int NumArgs, char **Args)
   char Case1[] = "\"some text\"";
   char Case2[] = "{}";
   char Case3[] = "   { \n  \"x0\": 1, \"x1\": 2, \"x3\": { \"sub\": 3 } }";
-  char Case4[] = "   { \"pairs\": [{ \"x0\": 1, \"x1\": 2 }] }";
+  char Case4[] = "   { \"pairs\": [{ \"x0\": 1, \"x1\": 2 }, { \"x0\": 3, \"x1\": 4 }] }";
   char *TestCases[] = {
     Case4,
     Case1,
