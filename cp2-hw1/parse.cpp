@@ -67,7 +67,7 @@ struct json_value
   union
   {
     hash_node **Memory;
-    json_value *Items;
+    json_value **Items;
     u8 *String;
     float Number;
   };
@@ -276,6 +276,10 @@ InitHashmap(memory_arena *Arena, json_value *Value, int Size)
 {
   Value->Size = Size;
   Value->Memory = (hash_node **)PushSize(Arena, Size * sizeof(hash_node *));
+  for (int Index = 0; Index < Size; ++Index)
+  {
+    Value->Memory[Index]  = 0;
+  }
 }
 
 s32
@@ -324,6 +328,28 @@ Expect(u8 *Cursor, json_token ExpectedToken)
   json_token Token = ToToken(*Cursor);
   Assert(Token == ExpectedToken);
   return Cursor;
+}
+
+json_value *
+BuildJsonArray(memory_arena *Arena, 
+    continuation_node *JsonContinuation, 
+    property_stack *ElementStack)
+{
+  json_value *Value = PushStruct(Arena, json_value);
+  Value->Type = val_array;
+
+  s32 NumElements = ElementStack->NextFreeIndex - JsonContinuation->Index;
+
+  Value->Size = NumElements;
+  Value->Items = (json_value **)PushSize(Arena, NumElements * sizeof(json_value *));
+  s32 ValueIndex = 0;
+  for (s32 Index = JsonContinuation->Index; Index < ElementStack->NextFreeIndex; ++Index)
+  {
+    property_stack_node *Node = ElementStack->Memory[Index];
+    Value->Items[ValueIndex++] = Node->Value;
+  }
+  ElementStack->NextFreeIndex = JsonContinuation->Index; 
+  return Value;
 }
 
 json_value *
@@ -376,6 +402,9 @@ Parse(memory_arena *Arena, u8 *JSON)
 
   property_stack PropertyStack_ = {};
   property_stack *PropertyStack = &PropertyStack_;
+  
+  property_stack ElementStack_ = {};
+  property_stack *ElementStack = &ElementStack_;
 
   while (true)
   {
@@ -433,6 +462,25 @@ Parse(memory_arena *Arena, u8 *JSON)
             continue;
           }
         }
+        case (tok_lbrack):
+        {
+          Cursor = Consume(Cursor, '[');
+          Cursor = SkipWhitespace(Cursor);
+          if (*Cursor == ']')
+          {
+            Value = PushStruct(Arena, json_value);
+            Value->Type = val_array;
+            Value->Size = 0;
+          }
+          else
+          {
+            JsonContinuation->Memory[JsonContinuation->NextFreeIndex++] = Cont;
+            Cont = PushStruct(Arena, continuation_node);
+            Cont->Type = cont_array;
+            Cont->Index = ElementStack->NextFreeIndex;
+          }
+          continue;
+        }
         default:
           Assert(!"Not implemented!");
       }
@@ -470,6 +518,27 @@ Parse(memory_arena *Arena, u8 *JSON)
             Expect(Cursor, tok_rbrace);
             Cursor = Consume(Cursor, '}');
             Value = BuildJsonObject(Arena, Cont, PropertyStack);
+            Cont = JsonContinuation->Memory[--JsonContinuation->NextFreeIndex];
+            continue;
+          }
+        }
+        case (cont_array):
+        {
+          property_stack_node *Node = PushStruct(Arena, property_stack_node);
+          ElementStack->Memory[ElementStack->NextFreeIndex++] = Node;
+          ElementStack->Memory[ElementStack->NextFreeIndex - 1]->Value = Value;
+          if (*Cursor == ',')
+          {
+            Cursor += 1;
+            Cursor = SkipWhitespace(Cursor);
+            break;
+          }
+          else
+          {
+            Cursor = SkipWhitespace(Cursor);
+            Expect(Cursor, tok_rbrack);
+            Cursor = Consume(Cursor, ']');
+            Value = BuildJsonArray(Arena, Cont, ElementStack);
             Cont = JsonContinuation->Memory[--JsonContinuation->NextFreeIndex];
             continue;
           }
@@ -560,10 +629,12 @@ main(int NumArgs, char **Args)
   char Case1[] = "\"some text\"";
   char Case2[] = "{}";
   char Case3[] = "   { \n  \"x0\": 1, \"x1\": 2, \"x3\": { \"sub\": 3 } }";
+  char Case4[] = "   { \"pairs\": [{ \"x0\": 1, \"x1\": 2 }] }";
   char *TestCases[] = {
+    Case4,
     Case1,
     Case2,
-    Case3
+    Case3,
   };
 
   memory_arena Arena_ = {};
