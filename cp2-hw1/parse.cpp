@@ -361,7 +361,7 @@ BuildJsonObject(memory_arena *Arena,
 json_value *
 Parse(memory_arena *Arena, u8 *JSON)
 {
-  json_value *Value = PushStruct(Arena, json_value);
+  json_value *Value;
 
   u8 *Cursor = JSON;
 
@@ -391,12 +391,14 @@ Parse(memory_arena *Arena, u8 *JSON)
         {
           scan_property_result Res = ScanJsonString(Arena, Cursor);
           Cursor = Res.Cursor;
+          Value = PushStruct(Arena, json_value);
           Value->Type = val_string;
           Value->String = Res.String; 
           break;
         }
         case (tok_number):
         {
+          Value = PushStruct(Arena, json_value);
           Value->Type = val_number;
           scan_number_result Res = ScanJsonNumber(Cursor);
           Value->Number = Res.Number;
@@ -409,6 +411,7 @@ Parse(memory_arena *Arena, u8 *JSON)
           Cursor = SkipWhitespace(Cursor);
           if (*Cursor == '}')
           {
+            Value = PushStruct(Arena, json_value);
             Value->Type = val_object;
             Value->Size = 0;
             break;
