@@ -354,7 +354,7 @@ BuildJsonObject(memory_arena *Arena,
     u8 *Property = Node->Property;
     AddToHashmap(Arena, Value, Property, Node->Value);
   }
-
+  PropertyStack->NextFreeIndex = JsonContinuation->Index; 
   return Value;
 }
 
@@ -421,7 +421,7 @@ Parse(memory_arena *Arena, u8 *JSON)
             JsonContinuation->Memory[JsonContinuation->NextFreeIndex++] = Cont;
             Cont = PushStruct(Arena, continuation_node);
             Cont->Type = cont_object;
-            Cont->Index = 0;
+            Cont->Index = PropertyStack->NextFreeIndex;
             scan_property_result Res = ScanJsonString(Arena, Cursor);
             Cursor = Res.Cursor;
             property_stack_node *PropertyNode = PushStruct(Arena, property_stack_node);
@@ -488,7 +488,7 @@ main(int NumArgs, char **Args)
 {
   char Case1[] = "\"some text\"";
   char Case2[] = "{}";
-  char Case3[] = "   { \n  \"x0\": 1, \"x1\": 2 }";
+  char Case3[] = "   { \n  \"x0\": 1, \"x1\": 2, \"x3\": { \"sub\": 3 } }";
   char *TestCases[] = {
     Case1,
     Case2,
