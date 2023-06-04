@@ -15,6 +15,8 @@ typedef unsigned short u16;
 typedef unsigned int u32;
 typedef unsigned long u64;
 
+static s32 Primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 39, 41};
+
 struct memory_arena
 {
   u8 *Base;
@@ -276,9 +278,43 @@ InitHashmap(memory_arena *Arena, json_value *Value, int Size)
   Value->Memory = (hash_node **)PushSize(Arena, Size * sizeof(hash_node *));
 }
 
-void
-AddToHashmap(json_value *Target, json_value *Value)
+s32
+Hash(s32 HashmapSize, u8 *String)
 {
+  s32 Key = 0;
+  while (*String != '\0')
+  {
+    s32 HighOrder = Key & 0xf8000000;
+    Key = Key << 5;
+    Key = Key ^ (HighOrder >> 27);
+    Key = Key ^ *String++;
+  }
+  Key = Key % HashmapSize;
+  return Key;
+}
+
+void
+AddToHashmap(memory_arena *Arena, json_value *Target, u8 *Property, json_value *Value)
+{
+  s32 Key = Hash(Target->Size, Property);
+  hash_node *Node = PushStruct(Arena, hash_node);
+  Node->Key = Property;
+  Node->Value = Value;
+  Node->Next = 0;
+
+  if (Target->Memory[Key] == 0)
+  {
+    Target->Memory[Key] = Node;
+  }
+  else
+  {
+    hash_node *Curr = Target->Memory[Key];
+    while (Curr->Next != 0)
+    {
+      Curr = Curr->Next;
+    }
+    Curr->Next = Node;
+  }
 }
 
 u8 *
@@ -298,14 +334,25 @@ BuildJsonObject(memory_arena *Arena,
   json_value *Value = PushStruct(Arena, json_value);
   Value->Type = val_object;
 
-  int NumProperties = PropertyStack->NextFreeIndex - JsonContinuation->Index;
-  InitHashmap(Arena, Value, NumProperties);
+  s32 NumProperties = PropertyStack->NextFreeIndex - JsonContinuation->Index;
+  s32 PrimeSize = 0;
+  for (int Index = 0; Index < ArraySize(Primes); ++Index)
+  {
+    if (Primes[Index] >= NumProperties)
+    {
+      PrimeSize = Primes[Index];
+      break;
+    }
+  }
+  Assert(PrimeSize > 0);
 
-  for (int Index = JsonContinuation->Index; Index < PropertyStack->NextFreeIndex; ++Index)
+  InitHashmap(Arena, Value, PrimeSize);
+
+  for (s32 Index = JsonContinuation->Index; Index < PropertyStack->NextFreeIndex; ++Index)
   {
     property_stack_node *Node = PropertyStack->Memory[Index];
     u8 *Property = Node->Property;
-    AddToHashmap(Value, Node->Value);
+    AddToHashmap(Arena, Value, Property, Node->Value);
   }
 
   return Value;
