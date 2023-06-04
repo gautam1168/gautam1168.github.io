@@ -264,6 +264,7 @@ ScanJsonNumber(u8 *Cursor)
   {
     Result.Number *= 10;
     Result.Number += (*C++) - '0';
+    Token = ToToken(*C);
   }
   Result.Cursor = C; 
   return Result;
