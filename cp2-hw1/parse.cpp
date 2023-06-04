@@ -511,6 +511,49 @@ ObjectKeys(json_value *Object)
   return Result;
 }
 
+bool
+AreEqual(u8 *String1, u8 *String2)
+{
+  bool Result = true;
+  while (*String1 != '\0' && *String2 != '\0')
+  {
+    Result = (*String1++ == *String2++);
+  }
+
+  if (Result)
+  {
+    Result = (*String1 == *String2);
+  }
+
+  return Result;
+}
+
+json_value *
+GetPropVal(json_value *Object, u8 *Key)
+{
+  s32 Index = Hash(Object->Size, Key);
+  hash_node *Curr = Object->Memory[Index];
+  while (Curr)
+  {
+    if (AreEqual(Key, Curr->Key))
+    {
+      break;
+    }
+    else
+    {
+      Curr = Curr->Next;
+    }
+  }
+
+  json_value *Result = 0;
+  if (Curr != 0)
+  {
+    Result = Curr->Value;
+  }
+
+  return Result;
+}
+
 int
 main(int NumArgs, char **Args)
 {
@@ -534,7 +577,11 @@ main(int NumArgs, char **Args)
     Arena->Used = 0;
     json_value *Answer = Parse(Arena, (u8 *)TestCases[Index]);
     keys Keys = ObjectKeys(Answer);
-    int a = 1;
+    for (int KeyIndex = 0; KeyIndex < Keys.Size; ++KeyIndex)
+    {
+      json_value *Val = GetPropVal(Answer, Keys.Items[KeyIndex]);
+      int a = 1;
+    }
   }
 
   return 0;
