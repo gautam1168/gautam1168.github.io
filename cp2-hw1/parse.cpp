@@ -5,6 +5,40 @@
 #define Megabyte(N) Kilobyte(N)*1024
 #define Assert(expr) if (!(expr)) { __builtin_trap(); }
 
+typedef char s8;
+typedef short s16;
+typedef int s32;
+typedef long s64;
+
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+typedef unsigned long u64;
+
+struct memory_arena
+{
+  u8 *Base;
+  u32 Used;
+  u32 Max;
+};
+
+enum json_token
+{
+  tok_string,
+  tok_number,
+  tok_lbrace,
+  tok_rbrace,
+  tok_lbrack,
+  tok_rbrack,
+  tok_true,
+  tok_false,
+  tok_whitespace,
+  tok_colon,
+  tok_comma,
+  tok_illegal,
+  tok_null
+};
+
 enum type
 {
   val_number,
@@ -15,17 +49,11 @@ enum type
   val_bool
 };
 
-struct memory_arena
-{
-  unsigned char *Base;
-  int Used;
-  int Max;
-};
-
 struct json_value;
 
 struct hash_node
 {
+  u8 *Key;
   json_value *Value;
   hash_node *Next;
 };
@@ -33,34 +61,70 @@ struct hash_node
 struct json_value
 {
   type Type; 
+  s32 Size;
   union
   {
-    struct hash_map
-    {
-      int Size;
-      hash_node **Memory;
-    };
-
-    struct array
-    {
-      int Size;
-      json_value *Items;
-    };
-
-    struct 
-    {
-      int Size;
-      char *String;
-    };
-
+    hash_node **Memory;
+    json_value *Items;
+    u8 *String;
     float Number;
   };
+};
+
+struct json_value_stack
+{
+  json_value Memory[16];
+  s32 NextFreeIndex;
+};
+
+struct property_stack_node
+{
+  u8 *Property;
+  json_value *Value;
+};
+
+struct property_stack
+{
+  property_stack_node *Memory[16];
+  s32 NextFreeIndex;
+};
+
+enum continuation_type
+{
+  cont_return,
+  cont_object,
+  cont_array
+};
+
+struct continuation_node
+{
+  continuation_type Type;
+  s32 Index;
+};
+
+struct continuation_stack
+{
+  
+  continuation_node *Memory[16];
+  int NextFreeIndex;
 };
 
 struct keys
 {
   char **Items;
   int Size;
+};
+
+struct scan_property_result
+{
+  u8 *Cursor;
+  u8 *String;
+};
+
+struct scan_number_result
+{
+  u8 *Cursor;
+  float Number;
 };
 
 void *
@@ -72,101 +136,306 @@ PushSize(memory_arena *Arena, int Size)
   return Result;
 }
 
-type
-Type(json_value *Object)
+#define PushStruct(Arena, type) (type *)PushSize(Arena, sizeof(type));
+
+json_token
+ToToken(char Character)
 {
-  return val_null;
+  json_token Result = tok_null;
+  switch (Character)
+  {
+    case ('"'):
+      Result = tok_string;
+      break;
+    case ('-'):
+    case ('0'):
+    case ('1'):
+    case ('2'):
+    case ('3'):
+    case ('4'):
+    case ('5'):
+    case ('6'):
+    case ('7'):
+    case ('8'):
+    case ('9'):
+      Result = tok_number;
+      break;
+    case('['):
+      Result = tok_lbrack;
+      break;
+    case(']'):
+      Result = tok_rbrack;
+      break;
+    case('{'):
+      Result = tok_lbrace;
+      break;
+    case('}'):
+      Result = tok_rbrace;
+      break;
+    case(':'):
+      Result = tok_colon;
+      break;
+    case(','):
+      Result = tok_comma;
+      break;
+    case('t'):
+      Result = tok_true;
+      break;
+    case('f'):
+      Result = tok_false;
+      break;
+    case('n'):
+      Result = tok_null;
+      break;
+    case(' '):
+    case('\n'):
+    case('\t'):
+    case('\r'):
+      Result = tok_whitespace;
+      break;
+  }
+
+  return Result;
 }
 
-keys *
-Keys(json_value *Object)
+u8 *
+SkipWhitespace(u8 *Cursor)
 {
-  return 0;
+  u8 *C = Cursor;
+  while (*C != '\0')
+  {
+    json_token Token = ToToken(*C);
+    if (Token == tok_whitespace)
+    {
+      C++;
+    }
+    else
+    {
+      break;
+    }
+  }
+  return C;
 }
 
-json_value *
-Get(json_value *Object, const char *Key)
+u8 *
+Consume(u8 *Cursor, json_token ExpectedToken)
 {
-  return 0;
+  u8 *Result = Cursor;
+  json_token Token = ToToken(*Cursor);
+  if (Token == ExpectedToken)
+  {
+    Result = Cursor + 1;
+  }
+
+  return Result;
+}
+
+scan_property_result
+ScanJsonString(memory_arena *Arena, u8 *Cursor)
+{
+  scan_property_result Result = {};
+  u8 *CopyTarget = (u8 *)Arena->Base + Arena->Used;
+  u8 *C = CopyTarget;
+  int Length = 0;
+
+  Cursor += 1; // Skip opening "
+  while (*Cursor != '"')
+  {
+    Length++;
+    *C++ = *Cursor++;
+  }
+  Cursor += 1; // Skip closing "
+  Length++;
+  *C++ = '\0';
+
+  Arena->Used += Length;
+  Result.String = CopyTarget;
+  Result.Cursor = Cursor;
+  return Result;
+}
+
+scan_number_result
+ScanJsonNumber(u8 *Cursor)
+{
+  u8 *C = Cursor;
+  scan_number_result Result = {};
+  json_token Token = ToToken(*C);
+  while (Token == tok_number)
+  {
+    Result.Number *= 10;
+    Result.Number += (*C++) - '0';
+  }
+  Result.Cursor = C; 
+  return Result;
 }
 
 void
-SkipWhitespace(char **Cursor)
+InitHashmap(memory_arena *Arena, json_value *Value, int Size)
 {
-  char *C = *Cursor;
-  while ((*C == ' ') ||
-      (*C == '\t') ||
-      (*C == '\n'))
-  {
-    C++;
-  }
-  *Cursor = C;
+  Value->Size = Size;
+  Value->Memory = (hash_node **)PushSize(Arena, Size * sizeof(hash_node *));
 }
 
-void 
-Advance(char **Cursor)
+void
+AddToHashmap(json_value *Target, json_value *Value)
 {
-  char *C = *Cursor;
-  *Cursor = C + 1;
 }
 
-json_value
-MakeString(memory_arena *Arena, char **Cursor)
+u8 *
+Expect(u8 *Cursor, json_token ExpectedToken)
 {
-  json_value Result = {};
-  Result.Type = val_string;
-
-  char *C = *Cursor;
-  int Length = 0;
-  while (*C++ != '"')
-  {
-    Length++;
-  }
-  
-  Result.String = (char *)PushSize(Arena, Length);
-  C = *Cursor;
-  Result.Size = Length;
-  for (int Index = 0; Index < Length; ++Index)
-  {
-    Result.String[Index] = *C++;
-  }
-
-  return Result;
+  Cursor = SkipWhitespace(Cursor);
+  json_token Token = ToToken(*Cursor);
+  Assert(Token == ExpectedToken);
+  return Cursor;
 }
 
-json_value 
-Parse(memory_arena *Arena, char *Input)
+json_value *
+BuildJsonObject(memory_arena *Arena, 
+    continuation_node *JsonContinuation, 
+    property_stack *PropertyStack)
 {
-  json_value Result = {};
+  json_value *Value = PushStruct(Arena, json_value);
+  Value->Type = val_object;
 
-  char *Cursor = Input;
-  SkipWhitespace(&Cursor);
+  int NumProperties = PropertyStack->NextFreeIndex - JsonContinuation->Index;
+  InitHashmap(Arena, Value, NumProperties);
+
+  for (int Index = JsonContinuation->Index; Index < PropertyStack->NextFreeIndex; ++Index)
+  {
+    property_stack_node *Node = PropertyStack->Memory[Index];
+    u8 *Property = Node->Property;
+    AddToHashmap(Value, Node->Value);
+  }
+
+  return Value;
+}
+
+json_value *
+Parse(memory_arena *Arena, u8 *JSON)
+{
+  json_value *Value = PushStruct(Arena, json_value);
+
+  u8 *Cursor = JSON;
+
+  Cursor = SkipWhitespace(Cursor);
+
+  continuation_node *Cont = PushStruct(Arena, continuation_node);
+  Cont->Type = cont_return;
+  Cont->Index = 0;
+
+  continuation_stack JsonContinuation_ = {};
+  continuation_stack *JsonContinuation = &JsonContinuation_;
+
+  property_stack PropertyStack_ = {};
+  property_stack *PropertyStack = &PropertyStack_;
+
   while (true)
   {
-    switch(*Cursor)
+    // Produce json value
+    while (true)
     {
-      case ('"'):
+      Cursor = SkipWhitespace(Cursor);
+
+      json_token JsonToken = ToToken(*Cursor);
+      switch (JsonToken)
       {
-        Advance(&Cursor);
-        Result = MakeString(Arena, &Cursor);
-        break;
+        case (tok_string):
+        {
+          scan_property_result Res = ScanJsonString(Arena, Cursor);
+          Cursor = Res.Cursor;
+          Value->Type = val_string;
+          Value->String = Res.String; 
+          break;
+        }
+        case (tok_number):
+        {
+          Value->Type = val_number;
+          scan_number_result Res = ScanJsonNumber(Cursor);
+          Value->Number = Res.Number;
+          Cursor = Res.Cursor;
+          break;
+        }
+        case (tok_lbrace):
+        {
+          Cursor = Consume(Cursor, tok_lbrace);
+          Cursor = SkipWhitespace(Cursor);
+          if (*Cursor == '}')
+          {
+            Value->Type = val_object;
+            Value->Size = 0;
+            break;
+          }
+          else
+          {
+            JsonContinuation->Memory[JsonContinuation->NextFreeIndex++] = Cont;
+            Cont = PushStruct(Arena, continuation_node);
+            Cont->Type = cont_object;
+            Cont->Index = 0;
+            scan_property_result Res = ScanJsonString(Arena, Cursor);
+            Cursor = Res.Cursor;
+            property_stack_node *PropertyNode = PushStruct(Arena, property_stack_node);
+            PropertyNode->Property = Res.String;
+            PropertyNode->Value = 0;
+            PropertyStack->Memory[PropertyStack->NextFreeIndex++] = PropertyNode;
+            Cursor = Expect(Cursor, tok_colon);
+            Cursor = Consume(Cursor, tok_colon);
+            continue;
+          }
+        }
+        default:
+          Assert(!"Not implemented!");
       }
-      case ('{'):
+      break;
+    }
+
+    // Consume json value
+    while (true)
+    {
+      switch (Cont->Type)
       {
-        Advance(&Cursor);
-        Result.Type = val_object;
-        SkipWhitespace(&Cursor);
-        break;
-      } 
+        case (cont_return):
+          break;
+        case (cont_object):
+        {
+          PropertyStack->Memory[PropertyStack->NextFreeIndex - 1]->Value = Value;
+          if (*Cursor == ',')
+          {
+            // if comma then produce next property and break
+            scan_property_result Res = ScanJsonString(Arena, Cursor);
+            Cursor = Res.Cursor;
+            property_stack_node *PropertyNode = PushStruct(Arena, property_stack_node);
+            PropertyNode->Property = Res.String;
+            PropertyNode->Value = 0;
+            PropertyStack->Memory[PropertyStack->NextFreeIndex++] = PropertyNode;
+            Cursor = Expect(Cursor, tok_colon);
+            Cursor = Consume(Cursor, tok_colon);
+            break;
+          }
+          else
+          {
+            Expect(Cursor, tok_rbrace);
+            Value = BuildJsonObject(Arena, Cont, PropertyStack);
+            Cont = JsonContinuation->Memory[JsonContinuation->NextFreeIndex--];
+            if (JsonContinuation->NextFreeIndex > 0)
+            {
+              continue;
+            }
+            break;
+          }
+        }
+        default:
+          Assert(!"Not Implemented!");
+      }
+      break;
     }
     break;
   }
-
-  return Result;
+  return Value;
 }
 
 int
-main(int NumArgs, char **Argv)
+main(int NumArgs, char **Args)
 {
   char Case1[] = "\"some text\"";
   char Case2[] = "{}";
@@ -179,18 +448,16 @@ main(int NumArgs, char **Argv)
 
   memory_arena Arena_ = {};
   memory_arena *Arena = &Arena_;
-  Arena->Max = Megabyte(10);
+  Arena->Max = Megabyte(100);
   Arena->Used = 0;
-  Arena->Base = (unsigned char *)calloc(Arena->Max, sizeof(unsigned char));
+  Arena->Base = (u8 *)calloc(Arena->Max, sizeof(u8));
 
   for (int Index = 0; Index < ArraySize(TestCases); ++Index)
   {
-    char *JSON = TestCases[Index];
-    json_value Answer = Parse(Arena, JSON);
-    // Answer.type() -> "object"/"array"/"boolean"/"number"/"null"
-    // Answer.keys() -> ["x0", "x1"]
-    // Answer.get("x0")
-    // Answer.get("x1")
+    Arena->Used = 0;
+    json_value *Answer = Parse(Arena, (u8 *)TestCases[Index]);
+    int a = 1;
   }
+
   return 0;
 }
