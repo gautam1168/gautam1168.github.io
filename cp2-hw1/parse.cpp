@@ -218,11 +218,10 @@ SkipWhitespace(u8 *Cursor)
 }
 
 u8 *
-Consume(u8 *Cursor, json_token ExpectedToken)
+Consume(u8 *Cursor, char Character)
 {
   u8 *Result = Cursor;
-  json_token Token = ToToken(*Cursor);
-  if (Token == ExpectedToken)
+  if (*Cursor == Character)
   {
     Result = Cursor + 1;
   }
@@ -359,7 +358,7 @@ Parse(memory_arena *Arena, u8 *JSON)
         }
         case (tok_lbrace):
         {
-          Cursor = Consume(Cursor, tok_lbrace);
+          Cursor = Consume(Cursor, '{');
           Cursor = SkipWhitespace(Cursor);
           if (*Cursor == '}')
           {
@@ -380,7 +379,7 @@ Parse(memory_arena *Arena, u8 *JSON)
             PropertyNode->Value = 0;
             PropertyStack->Memory[PropertyStack->NextFreeIndex++] = PropertyNode;
             Cursor = Expect(Cursor, tok_colon);
-            Cursor = Consume(Cursor, tok_colon);
+            Cursor = Consume(Cursor, ':');
             continue;
           }
         }
@@ -396,12 +395,14 @@ Parse(memory_arena *Arena, u8 *JSON)
       switch (Cont->Type)
       {
         case (cont_return):
-          break;
+          return Value;
         case (cont_object):
         {
           PropertyStack->Memory[PropertyStack->NextFreeIndex - 1]->Value = Value;
           if (*Cursor == ',')
           {
+            Cursor += 1; // Skip ,
+            Cursor = SkipWhitespace(Cursor);
             // if comma then produce next property and break
             scan_property_result Res = ScanJsonString(Arena, Cursor);
             Cursor = Res.Cursor;
@@ -410,19 +411,17 @@ Parse(memory_arena *Arena, u8 *JSON)
             PropertyNode->Value = 0;
             PropertyStack->Memory[PropertyStack->NextFreeIndex++] = PropertyNode;
             Cursor = Expect(Cursor, tok_colon);
-            Cursor = Consume(Cursor, tok_colon);
+            Cursor = Consume(Cursor, ':');
             break;
           }
           else
           {
+            Cursor = SkipWhitespace(Cursor);
             Expect(Cursor, tok_rbrace);
+            Cursor = Consume(Cursor, '}');
             Value = BuildJsonObject(Arena, Cont, PropertyStack);
-            Cont = JsonContinuation->Memory[JsonContinuation->NextFreeIndex--];
-            if (JsonContinuation->NextFreeIndex > 0)
-            {
-              continue;
-            }
-            break;
+            Cont = JsonContinuation->Memory[--JsonContinuation->NextFreeIndex];
+            continue;
           }
         }
         default:
@@ -430,7 +429,6 @@ Parse(memory_arena *Arena, u8 *JSON)
       }
       break;
     }
-    break;
   }
   return Value;
 }
