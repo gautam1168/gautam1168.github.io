@@ -108,13 +108,13 @@ struct continuation_stack
 {
   
   continuation_node *Memory[16];
-  int NextFreeIndex;
+  s32 NextFreeIndex;
 };
 
 struct keys
 {
-  char **Items;
-  int Size;
+  u8 **Items;
+  s32 Size;
 };
 
 struct scan_property_result
@@ -483,6 +483,34 @@ Parse(memory_arena *Arena, u8 *JSON)
   return Value;
 }
 
+keys
+ObjectKeys(json_value *Object)
+{
+  keys Result = {}; 
+  Result.Items = (u8 **)calloc(16, sizeof(u8 *));
+  Result.Size = 0;
+
+  int NumKeys = 0;
+  if (Object->Type == val_object)
+  {
+    for (int Index = 0; Index < Object->Size; ++Index)
+    {
+      hash_node *Curr;
+      Curr = Object->Memory[Index];
+      if (Curr != 0)
+      {
+        while (Curr)
+        {
+          Result.Items[Result.Size++] = Curr->Key;
+          Curr = Curr->Next;
+        }
+      }
+    }
+  }
+
+  return Result;
+}
+
 int
 main(int NumArgs, char **Args)
 {
@@ -505,6 +533,7 @@ main(int NumArgs, char **Args)
   {
     Arena->Used = 0;
     json_value *Answer = Parse(Arena, (u8 *)TestCases[Index]);
+    keys Keys = ObjectKeys(Answer);
     int a = 1;
   }
 
