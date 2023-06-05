@@ -294,7 +294,7 @@ ParseNumber(u8 *Input)
   }
 
   s32 WholePart = 0;
-  for (s32 Index = WholeLength - 1; Index >= 0; --Index)
+  for (s32 Index = 0; Index < WholeLength; ++Index)
   {
     u8 Digit = Whole[Index] - '0';
     WholePart = (WholePart * 10) + Digit;
@@ -306,8 +306,26 @@ ParseNumber(u8 *Input)
     FractionalDigits[Index] = Fraction[Index] - '0';
   }
 
+  int NumSignificantBits = 0;
+  int Num = WholePart; 
+  while (Num > 0)
+  {
+    Num = Num >> 1;
+    NumSignificantBits++;
+  }
+
   s32 FractionalBits[52] = {};
-  for (s32 Index = 0; Index < 52; ++Index)
+  if (NumSignificantBits > 1)
+  {
+    for (s32 Index = 1; Index < NumSignificantBits; ++Index)
+    {
+      s32 ShiftedNumber = WholePart >> (NumSignificantBits - Index - 1);
+      s32 Bit = ShiftedNumber & 0b1;
+      FractionalBits[Index - 1] = Bit;
+    }
+  }
+
+  for (s32 Index = NumSignificantBits - 1; Index < 52; ++Index)
   {
     s32 Carry = 0;
     for (s32 DigIndex = 15; DigIndex >= 0; --DigIndex)
@@ -325,14 +343,6 @@ ParseNumber(u8 *Input)
       }
     }
     FractionalBits[Index] = Carry;
-  }
-
-  int NumSignificantBits = 0;
-  int Num = WholePart; 
-  while (Num > 0)
-  {
-    Num = Num >> 1;
-    NumSignificantBits++;
   }
 
   u64 Exponent = 0;
@@ -768,7 +778,7 @@ main(int NumArgs, char **Args)
     }
   }
   */
-  u8 TestCase[] = "-1.3829193115234375";
+  u8 TestCase[] = "48.237944101126494";
   float Answer = ParseNumber(TestCase);
   return 0;
 }
