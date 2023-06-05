@@ -255,6 +255,114 @@ ScanJsonString(memory_arena *Arena, u8 *Cursor)
   return Result;
 }
 
+float
+ParseNumber(u8 *Input)
+{
+  bool IsNegative = false;
+  if (*Input == '-')
+  {
+    IsNegative = true;
+    Input += 1;
+  }
+
+  u8 *Whole = Input;
+  s32 WholeLength = 0;
+
+  u8 *Fraction = Input;
+  s32 FractionLength = 0;
+
+  while (*Fraction != '.')
+  {
+    WholeLength++;
+    Fraction++;
+    if (*Fraction == '\0')
+    {
+      break;
+    }
+  }
+
+  bool HasFractional = *Fraction != '\0';
+  if (HasFractional)
+  {
+    Fraction++;
+    u8 *Cursor = Fraction;
+    while (*Cursor != '\0')
+    {
+      FractionLength++;
+      Cursor++;
+    }
+  }
+
+  s32 WholePart = 0;
+  for (s32 Index = WholeLength - 1; Index >= 0; --Index)
+  {
+    u8 Digit = Whole[Index] - '0';
+    WholePart = (WholePart * 10) + Digit;
+  }
+  
+  s32 FractionalDigits[16] = {};
+  for (s32 Index = 0; Index < FractionLength; ++Index)
+  {
+    FractionalDigits[Index] = Fraction[Index] - '0';
+  }
+
+  s32 FractionalBits[23] = {};
+  for (s32 Index = 0; Index < 23; ++Index)
+  {
+    s32 Carry = 0;
+    for (s32 DigIndex = 15; DigIndex >= 0; --DigIndex)
+    {
+      int Intermediate = 2 * FractionalDigits[DigIndex] + Carry;
+      if (Intermediate >= 10)
+      {
+        Carry = 1;
+        FractionalDigits[DigIndex] = Intermediate % 10;
+      }
+      else
+      {
+        Carry = 0;
+        FractionalDigits[DigIndex] = Intermediate;
+      }
+    }
+    FractionalBits[Index] = Carry;
+  }
+
+  int NumSignificantBits = 0;
+  int Num = WholePart; 
+  while (Num > 0)
+  {
+    Num = Num >> 1;
+    NumSignificantBits++;
+  }
+
+  int Exponent = 0;
+  if (NumSignificantBits > 1)
+  {
+    Exponent = NumSignificantBits - 1;
+  }
+
+  Exponent = Exponent + 127;
+  
+  u32 BitField = 0;
+  if (IsNegative)
+  {
+    BitField = BitField | (1 << 31);
+  }
+
+  BitField = BitField | (Exponent << 23);
+  for (int Index = 0; Index < 23; ++Index)
+  {
+    BitField = BitField | (FractionalBits[Index] << (22 - Index));
+  }
+
+  void *Caster = malloc(sizeof(float));
+  *((u32 *)Caster) = BitField;
+
+  float Result = *((float *)Caster);
+  free(Caster);
+  return Result;
+}
+
 scan_number_result
 ScanJsonNumber(u8 *Cursor)
 {
@@ -623,9 +731,12 @@ GetPropVal(json_value *Object, u8 *Key)
   return Result;
 }
 
+
+
 int
 main(int NumArgs, char **Args)
 {
+  /*
   char Case1[] = "\"some text\"";
   char Case2[] = "{}";
   char Case3[] = "   { \n  \"x0\": 1, \"x1\": 2, \"x3\": { \"sub\": 3 } }";
@@ -654,6 +765,8 @@ main(int NumArgs, char **Args)
       int a = 1;
     }
   }
-
+  */
+  u8 TestCase[] = "-1.3829193115234375";
+  float Answer = ParseNumber(TestCase);
   return 0;
 }
