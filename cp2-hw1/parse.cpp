@@ -69,7 +69,7 @@ struct json_value
     hash_node **Memory;
     json_value **Items;
     u8 *String;
-    float Number;
+    double Number;
   };
 };
 
@@ -126,11 +126,11 @@ struct scan_property_result
 struct scan_number_result
 {
   u8 *Cursor;
-  float Number;
+  double Number;
 };
 
 void *
-PushSize(memory_arena *Arena, int Size)
+PushSize(memory_arena *Arena, s32 Size)
 {
   Assert(Arena->Used + Size <= Arena->Max);
   void *Result = Arena->Base + Arena->Used;
@@ -149,6 +149,7 @@ ToToken(char Character)
     case ('"'):
       Result = tok_string;
       break;
+    case('.'):
     case ('-'):
     case ('0'):
     case ('1'):
@@ -371,28 +372,35 @@ ParseNumber(u8 *Input)
   *((u64 *)Caster) = BitField;
 
   double Result = *((double *)Caster);
-  free(Caster);
   return Result;
 }
 
 scan_number_result
-ScanJsonNumber(u8 *Cursor)
+ScanJsonNumber(u8 *NumberWorkMem, u8 *Cursor)
 {
   u8 *C = Cursor;
   scan_number_result Result = {};
-  json_token Token = ToToken(*C);
-  while (Token == tok_number)
+  for (s32 Index = 0; Index < 100; ++Index)
   {
-    Result.Number *= 10;
-    Result.Number += (*C++) - '0';
-    Token = ToToken(*C);
+    json_token Token = ToToken(*C);
+    if (Token == tok_number)
+    {
+      NumberWorkMem[Index] = *C++;
+    }
+    else
+    {
+      NumberWorkMem[Index] = '\0';
+      break;
+    }
   }
+
+  Result.Number = ParseNumber(NumberWorkMem);
   Result.Cursor = C; 
   return Result;
 }
 
 void
-InitHashmap(memory_arena *Arena, json_value *Value, int Size)
+InitHashmap(memory_arena *Arena, json_value *Value, s32 Size)
 {
   Value->Size = Size;
   Value->Memory = (hash_node **)PushSize(Arena, Size * sizeof(hash_node *));
@@ -511,6 +519,8 @@ Parse(memory_arena *Arena, u8 *JSON)
 
   u8 *Cursor = JSON;
 
+  u8 *NumberWorkMem = (u8 *)PushSize(Arena, 100 * sizeof(u8));
+
   Cursor = SkipWhitespace(Cursor);
 
   continuation_node *Cont = PushStruct(Arena, continuation_node);
@@ -549,7 +559,7 @@ Parse(memory_arena *Arena, u8 *JSON)
         {
           Value = PushStruct(Arena, json_value);
           Value->Type = val_number;
-          scan_number_result Res = ScanJsonNumber(Cursor);
+          scan_number_result Res = ScanJsonNumber(NumberWorkMem, Cursor);
           Value->Number = Res.Number;
           Cursor = Res.Cursor;
           break;
@@ -748,16 +758,15 @@ GetPropVal(json_value *Object, u8 *Key)
 int
 main(int NumArgs, char **Args)
 {
-  /*
   char Case1[] = "\"some text\"";
   char Case2[] = "{}";
-  char Case3[] = "   { \n  \"x0\": 1, \"x1\": 2, \"x3\": { \"sub\": 3 } }";
-  char Case4[] = "   { \"pairs\": [{ \"x0\": 1, \"x1\": 2 }, { \"x0\": 3, \"x1\": 4 }] }";
+  char Case3[] = "   { \n  \"x0\": 1.3247, \"x1\": 2.89732, \"x3\": { \"sub\": 3.8936 } }";
+  char Case4[] = "   { \"pairs\": [{ \"x0\": 1.98523, \"x1\": 2.17352 }, { \"x0\": 3.89539, \"x1\": 4.89782 }] }";
   char *TestCases[] = {
-    Case4,
     Case1,
     Case2,
     Case3,
+    Case4,
   };
 
   memory_arena Arena_ = {};
@@ -777,8 +786,9 @@ main(int NumArgs, char **Args)
       int a = 1;
     }
   }
+  /*
+  u8 TestCase[] = "-28.5175025263690110";
+  double Answer = ParseNumber(TestCase);
   */
-  u8 TestCase[] = "48.237944101126494";
-  float Answer = ParseNumber(TestCase);
   return 0;
 }
