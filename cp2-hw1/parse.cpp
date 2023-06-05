@@ -8,12 +8,12 @@
 typedef char s8;
 typedef short s16;
 typedef int s32;
-typedef long s64;
+typedef long long s64;
 
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
-typedef unsigned long u64;
+typedef unsigned long long u64;
 
 static s32 Primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 39, 41};
 
@@ -255,7 +255,7 @@ ScanJsonString(memory_arena *Arena, u8 *Cursor)
   return Result;
 }
 
-float
+double
 ParseNumber(u8 *Input)
 {
   bool IsNegative = false;
@@ -306,8 +306,8 @@ ParseNumber(u8 *Input)
     FractionalDigits[Index] = Fraction[Index] - '0';
   }
 
-  s32 FractionalBits[23] = {};
-  for (s32 Index = 0; Index < 23; ++Index)
+  s32 FractionalBits[52] = {};
+  for (s32 Index = 0; Index < 52; ++Index)
   {
     s32 Carry = 0;
     for (s32 DigIndex = 15; DigIndex >= 0; --DigIndex)
@@ -335,30 +335,32 @@ ParseNumber(u8 *Input)
     NumSignificantBits++;
   }
 
-  int Exponent = 0;
+  u64 Exponent = 0;
   if (NumSignificantBits > 1)
   {
     Exponent = NumSignificantBits - 1;
   }
 
-  Exponent = Exponent + 127;
+  Exponent = Exponent + 0x3ff;
   
-  u32 BitField = 0;
+  u64 BitField = 0;
+  u64 One = 1L;
   if (IsNegative)
   {
-    BitField = BitField | (1 << 31);
+    BitField = BitField | (One << 63);
   }
 
-  BitField = BitField | (Exponent << 23);
-  for (int Index = 0; Index < 23; ++Index)
+  BitField = BitField | (Exponent << 52);
+  for (int Index = 0; Index < 52; ++Index)
   {
-    BitField = BitField | (FractionalBits[Index] << (22 - Index));
+    BitField = BitField | ((u64)FractionalBits[Index] << (51 - Index));
   }
 
-  void *Caster = malloc(sizeof(float));
-  *((u32 *)Caster) = BitField;
+  u64 Mem = 0;
+  void *Caster = (void *)(&Mem);
+  *((u64 *)Caster) = BitField;
 
-  float Result = *((float *)Caster);
+  double Result = *((double *)Caster);
   free(Caster);
   return Result;
 }
