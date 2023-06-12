@@ -1,17 +1,4 @@
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long u64;
-
-typedef char s8;
-typedef short s16;
-typedef int s32;
-typedef long s64;
-
-typedef float f32;
-typedef double f64;
-
-#define assert(expression) if (!(expression)) { __builtin_trap(); }
+#include "parse.cpp"
 
 typedef struct output_buffer
 {
@@ -149,7 +136,7 @@ Generate(u8 *Memory, u32 NumPairs, u32 MaxMemory)
   s32 TotalBytes = BytesForWordPairs + BytesForAllPairs;
 
   s32 BytesPerFloat = 4;
-  assert(TotalBytes + 4 * NumPairs * BytesPerFloat <= MaxMemory);
+  Assert(TotalBytes + 4 * NumPairs * BytesPerFloat <= MaxMemory);
 
   f32 *Coords = (f32 *)Memory;
 

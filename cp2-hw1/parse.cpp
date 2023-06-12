@@ -1,20 +1,3 @@
-#include <stdlib.h>
-
-#define ArraySize(Arr) sizeof(Arr)/sizeof(Arr[0])
-#define Kilobyte(N) 1024
-#define Megabyte(N) Kilobyte(N)*1024
-#define Assert(expr) if (!(expr)) { __builtin_trap(); }
-
-typedef char s8;
-typedef short s16;
-typedef int s32;
-typedef long long s64;
-
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long long u64;
-
 static s32 Primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 39, 41};
 
 struct memory_arena
@@ -69,7 +52,7 @@ struct json_value
     hash_node **Memory;
     json_value **Items;
     u8 *String;
-    double Number;
+    f64 Number;
   };
 };
 
@@ -126,7 +109,7 @@ struct scan_property_result
 struct scan_number_result
 {
   u8 *Cursor;
-  double Number;
+  f64 Number;
 };
 
 void *
@@ -238,7 +221,7 @@ ScanJsonString(memory_arena *Arena, u8 *Cursor)
   scan_property_result Result = {};
   u8 *CopyTarget = (u8 *)Arena->Base + Arena->Used;
   u8 *C = CopyTarget;
-  int Length = 0;
+  s32 Length = 0;
 
   Cursor += 1; // Skip opening "
   while (*Cursor != '"')
@@ -256,7 +239,7 @@ ScanJsonString(memory_arena *Arena, u8 *Cursor)
   return Result;
 }
 
-double
+f64
 ParseNumber(u8 *Input)
 {
   bool IsNegative = false;
@@ -307,8 +290,8 @@ ParseNumber(u8 *Input)
     FractionalDigits[Index] = Fraction[Index] - '0';
   }
 
-  int NumSignificantBits = 0;
-  int Num = WholePart; 
+  s32 NumSignificantBits = 0;
+  s32 Num = WholePart; 
   while (Num > 0)
   {
     Num = Num >> 1;
@@ -331,7 +314,7 @@ ParseNumber(u8 *Input)
     s32 Carry = 0;
     for (s32 DigIndex = 15; DigIndex >= 0; --DigIndex)
     {
-      int Intermediate = 2 * FractionalDigits[DigIndex] + Carry;
+      s32 Intermediate = 2 * FractionalDigits[DigIndex] + Carry;
       if (Intermediate >= 10)
       {
         Carry = 1;
@@ -362,7 +345,7 @@ ParseNumber(u8 *Input)
   }
 
   BitField = BitField | (Exponent << 52);
-  for (int Index = 0; Index < 52; ++Index)
+  for (s32 Index = 0; Index < 52; ++Index)
   {
     BitField = BitField | ((u64)FractionalBits[Index] << (51 - Index));
   }
@@ -371,13 +354,14 @@ ParseNumber(u8 *Input)
   void *Caster = (void *)(&Mem);
   *((u64 *)Caster) = BitField;
 
-  double Result = *((double *)Caster);
+  f64 Result = *((f64 *)Caster);
   return Result;
 }
 
 scan_number_result
-ScanJsonNumber(u8 *NumberWorkMem, u8 *Cursor)
+ScanJsonNumber(memory_arena *Scratch, u8 *Cursor)
 {
+  u8 *NumberWorkMem = (u8 *)PushSize(Scratch, 100 * sizeof(u8));
   u8 *C = Cursor;
   scan_number_result Result = {};
   for (s32 Index = 0; Index < 100; ++Index)
@@ -396,6 +380,7 @@ ScanJsonNumber(u8 *NumberWorkMem, u8 *Cursor)
 
   Result.Number = ParseNumber(NumberWorkMem);
   Result.Cursor = C; 
+  Scratch->Used = 0;
   return Result;
 }
 
@@ -404,7 +389,7 @@ InitHashmap(memory_arena *Arena, json_value *Value, s32 Size)
 {
   Value->Size = Size;
   Value->Memory = (hash_node **)PushSize(Arena, Size * sizeof(hash_node *));
-  for (int Index = 0; Index < Size; ++Index)
+  for (s32 Index = 0; Index < Size; ++Index)
   {
     Value->Memory[Index]  = 0;
   }
@@ -490,7 +475,7 @@ BuildJsonObject(memory_arena *Arena,
 
   s32 NumProperties = PropertyStack->NextFreeIndex - JsonContinuation->Index;
   s32 PrimeSize = 0;
-  for (int Index = 0; Index < ArraySize(Primes); ++Index)
+  for (s32 Index = 0; Index < ArraySize(Primes); ++Index)
   {
     if (Primes[Index] >= NumProperties)
     {
@@ -513,13 +498,12 @@ BuildJsonObject(memory_arena *Arena,
 }
 
 json_value *
-Parse(memory_arena *Arena, u8 *JSON)
+Parse(memory_arena *Scratch, memory_arena *Arena, u8 *JSON)
 {
   json_value *Value;
 
   u8 *Cursor = JSON;
 
-  u8 *NumberWorkMem = (u8 *)PushSize(Arena, 100 * sizeof(u8));
 
   Cursor = SkipWhitespace(Cursor);
 
@@ -559,7 +543,7 @@ Parse(memory_arena *Arena, u8 *JSON)
         {
           Value = PushStruct(Arena, json_value);
           Value->Type = val_number;
-          scan_number_result Res = ScanJsonNumber(NumberWorkMem, Cursor);
+          scan_number_result Res = ScanJsonNumber(Scratch, Cursor);
           Value->Number = Res.Number;
           Cursor = Res.Cursor;
           break;
@@ -683,16 +667,16 @@ Parse(memory_arena *Arena, u8 *JSON)
 }
 
 keys
-ObjectKeys(json_value *Object)
+ObjectKeys(memory_arena *Arena, json_value *Object)
 {
   keys Result = {}; 
-  Result.Items = (u8 **)calloc(16, sizeof(u8 *));
+  Result.Items = (u8 **)PushSize(Arena, 16 * sizeof(u8 *));
   Result.Size = 0;
 
-  int NumKeys = 0;
+  s32 NumKeys = 0;
   if (Object->Type == val_object)
   {
-    for (int Index = 0; Index < Object->Size; ++Index)
+    for (s32 Index = 0; Index < Object->Size; ++Index)
     {
       hash_node *Curr;
       Curr = Object->Memory[Index];
@@ -753,42 +737,3 @@ GetPropVal(json_value *Object, u8 *Key)
   return Result;
 }
 
-
-
-int
-main(int NumArgs, char **Args)
-{
-  char Case1[] = "\"some text\"";
-  char Case2[] = "{}";
-  char Case3[] = "   { \n  \"x0\": 1.3247, \"x1\": 2.89732, \"x3\": { \"sub\": 3.8936 } }";
-  char Case4[] = "   { \"pairs\": [{ \"x0\": 1.98523, \"x1\": 2.17352 }, { \"x0\": 3.89539, \"x1\": 4.89782 }] }";
-  char *TestCases[] = {
-    Case1,
-    Case2,
-    Case3,
-    Case4,
-  };
-
-  memory_arena Arena_ = {};
-  memory_arena *Arena = &Arena_;
-  Arena->Max = Megabyte(100);
-  Arena->Used = 0;
-  Arena->Base = (u8 *)calloc(Arena->Max, sizeof(u8));
-
-  for (int Index = 0; Index < ArraySize(TestCases); ++Index)
-  {
-    Arena->Used = 0;
-    json_value *Answer = Parse(Arena, (u8 *)TestCases[Index]);
-    keys Keys = ObjectKeys(Answer);
-    for (int KeyIndex = 0; KeyIndex < Keys.Size; ++KeyIndex)
-    {
-      json_value *Val = GetPropVal(Answer, Keys.Items[KeyIndex]);
-      int a = 1;
-    }
-  }
-  /*
-  u8 TestCase[] = "-28.5175025263690110";
-  double Answer = ParseNumber(TestCase);
-  */
-  return 0;
-}
