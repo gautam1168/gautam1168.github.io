@@ -1,4 +1,13 @@
-#include "parse.cpp"
+#ifdef __wasm__
+// Imported random function from js
+extern "C" f32 random();
+extern "C" f32 sin(f32 Radians);
+extern "C" f32 cos(f32 Radians);
+extern "C" f32 asin(f32 Radians);
+extern "C" f32 sqrt(f32 Val);
+#else 
+#include <math.h>
+#endif
 
 typedef struct output_buffer
 {
@@ -11,13 +20,6 @@ typedef struct point
   f32 Lat;
   f32 Lon;
 } point;
-
-// Imported random function from js
-extern "C" f32 random();
-extern "C" f32 sin(f32 Radians);
-extern "C" f32 cos(f32 Radians);
-extern "C" f32 asin(f32 Radians);
-extern "C" f32 sqrt(f32 Val);
 
 inline f32 
 Square(f32 A)

@@ -3,8 +3,8 @@ static s32 Primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 39, 41};
 struct memory_arena
 {
   u8 *Base;
-  u32 Used;
-  u32 Max;
+  u64 Used;
+  u64 Max;
 };
 
 enum json_token
@@ -74,6 +74,13 @@ struct property_stack
   s32 NextFreeIndex;
 };
 
+struct element_stack
+{
+  property_stack_node **Memory;
+  s32 NextFreeIndex;
+  s32 MaxCount;
+};
+
 enum continuation_type
 {
   cont_return,
@@ -121,7 +128,7 @@ PushSize(memory_arena *Arena, s32 Size)
   return Result;
 }
 
-#define PushStruct(Arena, type) (type *)PushSize(Arena, sizeof(type));
+#define PushStruct(Arena, Type) (Type *)PushSize(Arena, sizeof(Type));
 
 json_token
 ToToken(char Character)
@@ -446,7 +453,7 @@ Expect(u8 *Cursor, json_token ExpectedToken)
 json_value *
 BuildJsonArray(memory_arena *Arena, 
     continuation_node *JsonContinuation, 
-    property_stack *ElementStack)
+    element_stack *ElementStack)
 {
   json_value *Value = PushStruct(Arena, json_value);
   Value->Type = val_array;
@@ -517,8 +524,10 @@ Parse(memory_arena *Scratch, memory_arena *Arena, u8 *JSON)
   property_stack PropertyStack_ = {};
   property_stack *PropertyStack = &PropertyStack_;
   
-  property_stack ElementStack_ = {};
-  property_stack *ElementStack = &ElementStack_;
+  element_stack ElementStack_ = {};
+  element_stack *ElementStack = &ElementStack_;
+  ElementStack->MaxCount = 10000000;
+  ElementStack->Memory = (property_stack_node **)PushSize(Arena, 10000000 * sizeof(property_stack_node *));
 
   while (true)
   {
@@ -611,6 +620,7 @@ Parse(memory_arena *Scratch, memory_arena *Arena, u8 *JSON)
         case (cont_object):
         {
           PropertyStack->Memory[PropertyStack->NextFreeIndex - 1]->Value = Value;
+          Cursor = SkipWhitespace(Cursor);
           if (*Cursor == ',')
           {
             Cursor += 1; // Skip ,
@@ -628,7 +638,6 @@ Parse(memory_arena *Scratch, memory_arena *Arena, u8 *JSON)
           }
           else
           {
-            Cursor = SkipWhitespace(Cursor);
             Expect(Cursor, tok_rbrace);
             Cursor = Consume(Cursor, '}');
             Value = BuildJsonObject(Arena, Cont, PropertyStack);
@@ -639,6 +648,7 @@ Parse(memory_arena *Scratch, memory_arena *Arena, u8 *JSON)
         case (cont_array):
         {
           property_stack_node *Node = PushStruct(Arena, property_stack_node);
+          Assert(ElementStack->NextFreeIndex + 1 < 10000000);
           ElementStack->Memory[ElementStack->NextFreeIndex++] = Node;
           ElementStack->Memory[ElementStack->NextFreeIndex - 1]->Value = Value;
           if (*Cursor == ',')

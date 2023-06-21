@@ -410,7 +410,7 @@ async function createAFile()
   const DefaultWriter = WritableStream.getWriter();
 
   const StartTime = performance.now();
-  if (false) 
+  if (true) 
   {
     const DataBuffer = await GeneratePairsInBinaryWasm(NumPairs, spread, lat1, lon1, lat2, lon2);
     await DefaultWriter.ready;
