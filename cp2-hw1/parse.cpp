@@ -507,6 +507,7 @@ BuildJsonObject(memory_arena *Arena,
 json_value *
 Parse(memory_arena *Scratch, memory_arena *Arena, u8 *JSON)
 {
+  TimeFunction;
   json_value *Value;
 
   u8 *Cursor = JSON;
